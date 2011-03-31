@@ -1,0 +1,4 @@
+999 RPL_CUSTOM
+"<param> <param> :Custom Numeric"
+
+This is a custom numeric
