@@ -1,0 +1,22 @@
+syntax: glob
+*.o
+*.a
+*.[568vq]
+[568vq].out
+rfc*.go
+*.cgo1.go
+*.cgo2.c
+_cgo_defun.c
+_cgo_gotypes.go
+_cgo_export.*
+_cgo_.c
+_cgo_import.c
+_cgo_main.c
+_cgo_flags
+_cgo_run
+*.so
+_obj
+_test
+_testmain.go
+*.exe
+ircd
