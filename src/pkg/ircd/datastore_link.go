@@ -28,14 +28,37 @@ func (ls *LinkStore) ControlLoop() {
 		switch rpc := rpci.(type) {
 			case NewLink:
 				if _,ok := ls.links[rpc.Id]; ok {
-					rpc.Success <- false
+					rpc.Return <- false
 					continue
 				}
 				ls.locks[rpc.Id] = new(sync.Mutex)
 				ls.links[rpc.Id] = rpc.Link
-				rpc.Success <- true
+				rpc.Return <- true
+			case EditLink:
+				go func() {
+					link,ok := ls.links[rpc.Id]
+					if !ok {
+						rpc.Return <- false
+						return
+					}
+					ls.locks[rpc.Id].Lock()
+					defer ls.locks[rpc.Id].Unlock()
+					rpc.Return <- rpc.LinkFunc(rpc.Id, link)
+				}()
+			case EachLink:
+				go func() {
+					success := true
+					for id,link := range ls.links {
+						ls.locks[id].Lock()
+						if !rpc.LinkFunc(id, link) {
+							success = false
+						}
+						ls.locks[id].Unlock()
+					}
+					rpc.Return <- success
+				}()
 			case Noop:
-				rpc.Success <- true
+				rpc.Return <- true
 			default:
 				fmt.Fprintf(os.Stderr, "Unknown LinkStore RPC: %v\n", rpci)
 		}
