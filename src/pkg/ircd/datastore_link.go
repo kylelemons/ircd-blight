@@ -8,6 +8,11 @@ import (
 
 type Link interface {}
 
+type LinkFunc func(string,Link) bool
+type NewLink struct {Id string; Link; Return}
+type EditLink struct {Id string; LinkFunc; Return}
+type EachLink struct {LinkFunc; Return}
+
 type LinkStore struct {
 	locks map[string]*sync.Mutex
 	links map[string]Link

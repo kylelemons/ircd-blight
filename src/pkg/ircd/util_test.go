@@ -6,13 +6,13 @@ import (
 
 func eq(t *testing.T, i int, desc string, exp,act interface{}) {
 	if exp != act {
-		t.Errorf("#%d: %s: Expected %#v, got %#v", 1+i, desc, exp, act)
+		t.Errorf("#%d: %s: Expected %#v, got %#v", i, desc, exp, act)
 	}
 }
 
 func ne(t *testing.T, i int, desc string, exp,act interface{}) {
 	if exp == act {
-		t.Errorf("#%d: %s: Expected NOT %#v, got %#v", 1+i, desc, exp, act)
+		t.Errorf("#%d: %s: Expected NOT %#v, got %#v", i, desc, exp, act)
 	}
 }
 
