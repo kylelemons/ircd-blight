@@ -7,6 +7,10 @@ import (
 	"bufio"
 )
 
+import (
+	"kevlar/ircd/parser"
+)
+
 func errchk(err os.Error) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
@@ -35,7 +39,7 @@ func Run() {
 			}
 			errchk(err)
 			server.Write(line);
-			m := ParseMessage(line)
+			m := parser.ParseMessage(line)
 			fmt.Printf("<< %s\n", m)
 		}
 
@@ -51,7 +55,7 @@ func Run() {
 			}
 			errchk(err)
 			client.Write(line);
-			m := ParseMessage(line)
+			m := parser.ParseMessage(line)
 			fmt.Printf("<< %s\n", m)
 		}
 

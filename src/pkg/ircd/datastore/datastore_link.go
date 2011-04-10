@@ -1,4 +1,4 @@
-package ircd
+package datastore
 
 import (
 	"fmt"

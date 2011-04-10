@@ -1,8 +1,10 @@
-package ircd
+package parser
 
 import (
 	"testing"
 )
+
+import u "kevlar/ircd/util"
 
 var parse_message_tests = []struct{
 	raw string
@@ -18,11 +20,11 @@ var parse_message_tests = []struct{
 func TestParseMesage(t *testing.T) {
 	for i,test := range parse_message_tests {
 		m := ParseMessage([]byte(test.raw));
-		eq(t,i, "prefix", test.prefix, m.Prefix)
-		eq(t,i, "command", test.command, m.Command)
-		eq(t,i, "arglen", len(test.args), len(m.Args))
+		u.EQ(t,i, "prefix", test.prefix, m.Prefix)
+		u.EQ(t,i, "command", test.command, m.Command)
+		u.EQ(t,i, "arglen", len(test.args), len(m.Args))
 		for j := 0; j < len(test.args) && j < len(m.Args); j++ {
-			eq(t,i, "arg", test.args[j], m.Args[j])
+			u.EQ(t,i, "arg", test.args[j], m.Args[j])
 		}
 	}
 }
