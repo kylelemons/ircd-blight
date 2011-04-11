@@ -19,4 +19,6 @@ _obj
 _test
 _testmain.go
 *.exe
-ircd
+
+syntax: glob
+src/cmd/ircd/ircd

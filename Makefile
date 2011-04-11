@@ -11,6 +11,7 @@ deppkg :
 
 pkgs :
 	@echo "Building packages..."
+	@$(MAKE) -C src/pkg/ircd -f Makefile.sub install
 	@$(MAKE) -C src/pkg/ircd install
 
 ircd : pkgs
@@ -22,5 +23,6 @@ cmds :
 
 test bench clean nuke install :
 	@echo "Performing $@..."
+	@$(MAKE) -C src/pkg/ircd -f Makefile.sub $@
 	@$(MAKE) -C src/pkg/ircd $@
 	@$(MAKE) -C src/cmd/ircd $@

@@ -1,0 +1,12 @@
+# Explicitly make targets phony, just in case
+.PHONY : all install clean nuke test bench
+
+# By default, build everything
+all : install
+
+test bench clean nuke install :
+	@echo "Performing $@..."
+	@$(MAKE) -C util $@
+	@$(MAKE) -C parser $@
+	@$(MAKE) -C conn $@
+	@$(MAKE) -C datastore $@
