@@ -18,14 +18,41 @@ var parse_message_tests = []struct{
 }
 
 func TestParseMesage(t *testing.T) {
-	for i,test := range parse_message_tests {
+	cmp := u.Test(t)
+	for _,test := range parse_message_tests {
 		m := ParseMessage([]byte(test.raw));
-		u.EQ(t,i, "prefix", test.prefix, m.Prefix)
-		u.EQ(t,i, "command", test.command, m.Command)
-		u.EQ(t,i, "arglen", len(test.args), len(m.Args))
+		cmp.EQ("prefix", test.prefix, m.Prefix)
+		cmp.EQ("command", test.command, m.Command)
+		cmp.EQ("arglen", len(test.args), len(m.Args))
 		for j := 0; j < len(test.args) && j < len(m.Args); j++ {
-			u.EQ(t,i, "arg", test.args[j], m.Args[j])
+			cmp.EQ("arg", test.args[j], m.Args[j])
 		}
+	}
+}
+
+var build_message_tests = []struct{
+	expected string
+	prefix, command string
+	args []string
+}{
+{":server.kevlar.net NOTICE user :*** This is a test",
+ "server.kevlar.net", "NOTICE", []string{"user", "*** This is a test"}},
+{":A B C", "A", "B", []string{"C"}},
+{"B C", "", "B", []string{"C"}},
+{":A B C D", "A", "B", []string{"C", "D"}},
+}
+func TestBuildMessage(t *testing.T) {
+	cmp := u.Test(t)
+	for _,test := range build_message_tests {
+		m := &Message{
+			Prefix: test.prefix,
+			Command: test.command,
+			Args: test.args,
+		}
+		bytes := m.Bytes()
+		str := m.String()
+		cmp.EQ("bytes", test.expected, string(bytes))
+		cmp.EQ("string", test.expected, str)
 	}
 }
 

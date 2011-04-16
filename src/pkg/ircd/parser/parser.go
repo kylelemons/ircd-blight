@@ -47,7 +47,7 @@ func ParseMessage(line []byte) *Message {
 }
 
 func (m Message) Bytes() []byte {
-	buf := bytes.NewBuffer(make([]byte, 256))
+	buf := bytes.NewBuffer(make([]byte, 0, 512))
 	if len(m.Prefix) > 0 {
 		buf.WriteByte(':')
 		buf.WriteString(m.Prefix)
