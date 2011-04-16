@@ -6,7 +6,6 @@ all : install
 
 test bench clean nuke install :
 	@echo "Performing $@..."
-	@$(MAKE) -C util $@
 	@$(MAKE) -C parser $@
 	@$(MAKE) -C conn $@
 	@$(MAKE) -C datastore $@

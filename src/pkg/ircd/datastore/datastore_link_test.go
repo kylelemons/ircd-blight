@@ -4,21 +4,26 @@ import (
 	"testing"
 )
 
-import u "kevlar/ircd/util"
-
 func TestLinkStoreNewLink(t *testing.T) {
 	ls := NewLinkStore()
 	success := NewReturn()
 	ls.control <- NewLink{"SSSAAAAAA", 42, success}
-	u.EQ(t,0, "success", true, <-success)
+	if !<-success {
+		t.Errorf("NewLink should return true")
+	}
 
-	lock,ok := ls.locks["SSSAAAAAA"]
-	u.EQ(t,1, "lock exists", true, ok)
-	u.NE(t,2, "lock", nil, lock)
+	if lock,ok := ls.locks["SSSAAAAAA"]; !ok {
+		t.Errorf("Lock should exist for SSSAAAAAA after NewLink")
+	} else if lock == nil {
+		t.Errorf("Lock should not be nil for SSSAAAAAA after NewLink")
+	}
 
-	link,ok := ls.links["SSSAAAAAA"]
-	u.EQ(t,3, "link exists", true, ok)
-	u.EQ(t,4, "link", 42, link)
+	if link,ok := ls.links["SSSAAAAAA"]; !ok {
+		t.Errorf("Link should exist for SSSAAAAAA after NewLink")
+	} else if link == nil {
+		t.Errorf("Link should not be nil for SSSAAAAAA after NewLink")
+	}
+
 	close(ls.control)
 }
 
@@ -30,13 +35,19 @@ func TestLinkStoreEditLink(t *testing.T) {
 
 	chk := make(map[int]bool)
 	ls.control <- EditLink{"SSSAAAAAA", func(id string, l Link) bool {
-		u.EQ(t,0, "editlink", 42, l)
-		u.EQ(t,1, "editid", "SSSAAAAAA", id)
+		if 42 != l {
+			t.Errorf("Link should be %v, got %v", 42, l)
+		}
+		if "SSSAAAAAA" != id {
+			t.Errorf("ID should be %v, got %v", "SSSAAAAAA", id)
+		}
 		chk[l.(int)] = true
 		return true
 	}, success}
 	<-success
-	u.EQ(t,2, "all", true, chk[42])
+	if val,ok := chk[42]; !ok || !val {
+		t.Errorf("Call of func(42) expected, none recorded")
+	}
 
 	close(ls.control)
 }
@@ -57,10 +68,18 @@ func TestLinkStoreEachLink(t *testing.T) {
 		return true
 	}, success}
 	<-success
-	u.EQ(t,0, "link a", true, chklink[42])
-	u.EQ(t,1, "link b", true, chklink[43])
-	u.EQ(t,2, "id a", true, chkid["SSSAAAAAA"])
-	u.EQ(t,3, "id b", true, chkid["SSSAAAAAB"])
+	if val,ok := chklink[42]; !ok || !val {
+		t.Errorf("Call of func(42) expected, none recorded")
+	}
+	if val,ok := chklink[43]; !ok || !val {
+		t.Errorf("Call of func(43) expected, none recorded")
+	}
+	if val,ok := chkid["SSSAAAAAA"]; !ok || !val {
+		t.Errorf("Call of func(SSSAAAAAA) expected, none recorded")
+	}
+	if val,ok := chkid["SSSAAAAAB"]; !ok || !val {
+		t.Errorf("Call of func(SSSAAAAAB) expected, none recorded")
+	}
 
 	close(ls.control)
 }

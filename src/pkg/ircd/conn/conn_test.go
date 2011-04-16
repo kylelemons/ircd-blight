@@ -1,12 +1,10 @@
 package conn
 
 import (
-	"fmt"
 	"net"
 	"os"
 	"testing"
 	"kevlar/ircd/parser"
-	u "kevlar/ircd/util"
 )
 
 type MockConn struct {
@@ -25,7 +23,6 @@ func (mc *MockConn) Close() os.Error {
 }
 func (mc *MockConn) Write(b []byte) (n int, err os.Error) {
 	mc.lastwrite = b
-	fmt.Printf("Write: %v\n", b)
 	return len(b), nil
 }
 func (mc *MockConn) Read(b []byte) (n int, err os.Error) {
@@ -51,26 +48,37 @@ func (mc *MockConn) Add(s string) {
 }
 
 func TestConn(t *testing.T) {
-	cmp := u.Test(t)
 	mc := new(MockConn)
 	mc.Add(":source command arg :longarg\r\n")
-	mc.Add(":source command arg :longarg\n")
+	mc.Add(":SOURCE COMMAND ARG :LONGARG\n")
 	conn := NewConn(mc)
-	cmp.NE("conn", nil, conn)
+	if conn == nil {
+		t.Fatalf("NewConn should not return a nil connection")
+	}
 	// Test with \r\n
 	message := conn.ReadMessage()
-	cmp.EQ("prefix", "source", message.Prefix)
-	cmp.EQ("command", "command", message.Command)
-	cmp.EQ("args", []string{"arg", "longarg"}, message.Args)
-	fmt.Println("Done")
+	if "source" != message.Prefix {
+		t.Errorf("Message prefix %q expected, got %q", "source", message.Prefix)
+	}
+	if "command" != message.Command {
+		t.Errorf("Message command %q expected, got %q", "command", message.Command)
+	}
+	if 2 != len(message.Args) || "arg" != message.Args[0] || "longarg" != message.Args[1] {
+		t.Errorf("Message args %v expected, got %v", []string{"arg", "longarg"}, message.Args)
+	}
 	message = conn.ReadMessage()
-	cmp.EQ("prefix", "source", message.Prefix)
-	cmp.EQ("command", "command", message.Command)
-	cmp.EQ("args", []string{"arg", "longarg"}, message.Args)
+	if "SOURCE" != message.Prefix {
+		t.Errorf("Message prefix %q expected, got %q", "SOURCE", message.Prefix)
+	}
+	if "COMMAND" != message.Command {
+		t.Errorf("Message command %q expected, got %q", "COMMAND", message.Command)
+	}
+	if 2 != len(message.Args) || "ARG" != message.Args[0] || "LONGARG" != message.Args[1] {
+		t.Errorf("Message args %v expected, got %v", []string{"ARG", "LONGARG"}, message.Args)
+	}
 }
 
 func TestWriteMessage(t *testing.T) {
-	cmp := u.Test(t)
 	msg := &parser.Message{
 		Prefix: "server",
 		Command: "COMMAND",
@@ -79,7 +87,10 @@ func TestWriteMessage(t *testing.T) {
 	mc := new(MockConn)
 	conn := NewConn(mc)
 	conn.WriteMessage(msg)
-	cmp.EQ("Write", ":server COMMAND arg1 arg2 :arg3 arg3", string(mc.lastwrite))
+	if ":server COMMAND arg1 arg2 :arg3 arg3" != string(mc.lastwrite) {
+		t.Errorf("Expected write of %q, got %q", ":server COMMAND arg1 arg2 :arg3 arg3",
+				string(mc.lastwrite))
+	}
 }
 
 func BenchmarkWriteMessage(b *testing.B) {

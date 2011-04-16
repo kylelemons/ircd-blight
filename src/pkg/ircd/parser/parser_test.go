@@ -4,8 +4,6 @@ import (
 	"testing"
 )
 
-import u "kevlar/ircd/util"
-
 var parse_message_tests = []struct{
 	raw string
 	prefix, command string
@@ -18,14 +16,22 @@ var parse_message_tests = []struct{
 }
 
 func TestParseMesage(t *testing.T) {
-	cmp := u.Test(t)
-	for _,test := range parse_message_tests {
+	for i,test := range parse_message_tests {
 		m := ParseMessage([]byte(test.raw));
-		cmp.EQ("prefix", test.prefix, m.Prefix)
-		cmp.EQ("command", test.command, m.Command)
-		cmp.EQ("arglen", len(test.args), len(m.Args))
-		for j := 0; j < len(test.args) && j < len(m.Args); j++ {
-			cmp.EQ("arg", test.args[j], m.Args[j])
+		if test.prefix != m.Prefix {
+			t.Errorf("#d: Expected prefix %q, got %q", i, test.prefix, m.Prefix)
+		}
+		if test.command != m.Command {
+			t.Errorf("#d: Expected command %q, got %q", i, test.command, m.Command)
+		}
+		if len(test.args) != len(m.Args) {
+			t.Errorf("#d: Expected args %v, got %v", i, test.args, m.Args)
+		} else {
+			for j := 0; j < len(test.args) && j < len(m.Args); j++ {
+				if test.args[j] != m.Args[j] {
+					t.Errorf("#d: Expected arg[%d] %q, got %q", i, test.args[j], m.Args[j])
+				}
+			}
 		}
 	}
 }
@@ -42,8 +48,7 @@ var build_message_tests = []struct{
 {":A B C D", "A", "B", []string{"C", "D"}},
 }
 func TestBuildMessage(t *testing.T) {
-	cmp := u.Test(t)
-	for _,test := range build_message_tests {
+	for i,test := range build_message_tests {
 		m := &Message{
 			Prefix: test.prefix,
 			Command: test.command,
@@ -51,8 +56,13 @@ func TestBuildMessage(t *testing.T) {
 		}
 		bytes := m.Bytes()
 		str := m.String()
-		cmp.EQ("bytes", test.expected, string(bytes))
-		cmp.EQ("string", test.expected, str)
+		if test.expected != str {
+			t.Errorf("Expected string representation %q, got %q", i, test.expected, str)
+		}
+		if string(bytes) != str {
+			t.Errorf("Expected identical string and byte representation, got %q and %q", i,
+					bytes, str)
+		}
 	}
 }
 
