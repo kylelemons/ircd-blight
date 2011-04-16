@@ -52,11 +52,13 @@ func TestConn(t *testing.T) {
 	mc.Add(":source command arg :longarg\r\n")
 	mc.Add(":SOURCE COMMAND ARG :LONGARG\n")
 	conn := NewConn(mc)
+	messages := make(chan *parser.Message)
+	conn.Subscribe(messages)
 	if conn == nil {
 		t.Fatalf("NewConn should not return a nil connection")
 	}
 	// Test with \r\n
-	message := conn.ReadMessage()
+	message := <-messages
 	if "source" != message.Prefix {
 		t.Errorf("Message prefix %q expected, got %q", "source", message.Prefix)
 	}
@@ -66,7 +68,7 @@ func TestConn(t *testing.T) {
 	if 2 != len(message.Args) || "arg" != message.Args[0] || "longarg" != message.Args[1] {
 		t.Errorf("Message args %v expected, got %v", []string{"arg", "longarg"}, message.Args)
 	}
-	message = conn.ReadMessage()
+	message = <-messages
 	if "SOURCE" != message.Prefix {
 		t.Errorf("Message prefix %q expected, got %q", "SOURCE", message.Prefix)
 	}

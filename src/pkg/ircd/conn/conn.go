@@ -10,7 +10,7 @@ import (
 type Conn struct {
 	net.Conn
 	active bool
-	messages chan *parser.Message
+	subscribers map[chan *parser.Message]bool
 	Error os.Error
 }
 
@@ -18,7 +18,7 @@ func NewConn(nc net.Conn) *Conn {
 	c := new(Conn)
 	c.Conn = nc
 	c.active = true
-	c.messages = make(chan *parser.Message)
+	c.subscribers = make(map[chan *parser.Message]bool)
 	go c.readthread()
 	return c
 }
@@ -26,9 +26,6 @@ func NewConn(nc net.Conn) *Conn {
 func (c *Conn) readthread() {
 	// Always close the connection
 	defer c.Close()
-
-	// Always close the message channel
-	defer close(c.messages)
 
 	// Read lines by \r\n or \n
 	linereader := line.NewReader(c, 512)
@@ -41,17 +38,11 @@ func (c *Conn) readthread() {
 		}
 		message := parser.ParseMessage(line)
 		if message != nil {
-			c.messages <- message
+			for subscriber := range c.subscribers {
+				subscriber <- message
+			}
 		}
 	}
-}
-
-func (c *Conn) Iter() chan<- *parser.Message {
-	return c.messages
-}
-
-func (c *Conn) ReadMessage() *parser.Message {
-	return <-c.messages
 }
 
 func (c *Conn) WriteMessage(message *parser.Message) {
@@ -66,4 +57,12 @@ func (c *Conn) WriteMessage(message *parser.Message) {
 
 func (c *Conn) Active() bool {
 	return c.active
+}
+
+func (c *Conn) Subscribe(chn chan *parser.Message) {
+	c.subscribers[chn] = true
+}
+
+func (c *Conn) Unsubscribe(chn chan *parser.Message) {
+	c.subscribers[chn] = false,false
 }

@@ -16,20 +16,20 @@ type EachLink struct {LinkFunc; Return}
 type LinkStore struct {
 	locks map[string]*sync.Mutex
 	links map[string]Link
-	control chan RPC
+	Control chan RPC
 }
 
-func NewLinkStore() *LinkStore {
+func newLinkStore() *LinkStore {
 	ls := new(LinkStore)
 	ls.locks = make(map[string]*sync.Mutex)
 	ls.links = make(map[string]Link)
-	ls.control = make(chan RPC)
+	ls.Control = make(chan RPC)
 	go ls.ControlLoop()
 	return ls
 }
 
 func (ls *LinkStore) ControlLoop() {
-	for rpci := range ls.control {
+	for rpci := range ls.Control {
 		switch rpc := rpci.(type) {
 			case NewLink:
 				if _,ok := ls.links[rpc.Id]; ok {

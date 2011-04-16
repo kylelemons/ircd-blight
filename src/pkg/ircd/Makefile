@@ -2,6 +2,7 @@ include $(GOROOT)/src/Make.inc
 
 TARG=kevlar/ircd
 GOFILES=\
+	core.go\
 	run.go\
 	rfc2812.go\
 

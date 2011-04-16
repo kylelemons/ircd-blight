@@ -28,7 +28,7 @@ type DataStore struct {
 
 func NewDataStore() *DataStore {
 	ds := new(DataStore)
-	ds.LinkStore = NewLinkStore()
+	ds.LinkStore = newLinkStore()
 	ds.Control = make(chan RPC)
 	ds.config = make(map[string]map[string]Value)
 	go ds.ControlLoop()
