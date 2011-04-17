@@ -12,13 +12,13 @@ func TestLinkStoreNewLink(t *testing.T) {
 		t.Errorf("NewLink should return true")
 	}
 
-	if lock,ok := ls.locks["SSSAAAAAA"]; !ok {
+	if lock, ok := ls.locks["SSSAAAAAA"]; !ok {
 		t.Errorf("Lock should exist for SSSAAAAAA after NewLink")
 	} else if lock == nil {
 		t.Errorf("Lock should not be nil for SSSAAAAAA after NewLink")
 	}
 
-	if link,ok := ls.links["SSSAAAAAA"]; !ok {
+	if link, ok := ls.links["SSSAAAAAA"]; !ok {
 		t.Errorf("Link should exist for SSSAAAAAA after NewLink")
 	} else if link == nil {
 		t.Errorf("Link should not be nil for SSSAAAAAA after NewLink")
@@ -43,9 +43,10 @@ func TestLinkStoreEditLink(t *testing.T) {
 		}
 		chk[l.(int)] = true
 		return true
-	}, success}
+	},
+		success}
 	<-success
-	if val,ok := chk[42]; !ok || !val {
+	if val, ok := chk[42]; !ok || !val {
 		t.Errorf("Call of func(42) expected, none recorded")
 	}
 
@@ -66,18 +67,19 @@ func TestLinkStoreEachLink(t *testing.T) {
 		chklink[l.(int)] = true
 		chkid[id] = true
 		return true
-	}, success}
+	},
+		success}
 	<-success
-	if val,ok := chklink[42]; !ok || !val {
+	if val, ok := chklink[42]; !ok || !val {
 		t.Errorf("Call of func(42) expected, none recorded")
 	}
-	if val,ok := chklink[43]; !ok || !val {
+	if val, ok := chklink[43]; !ok || !val {
 		t.Errorf("Call of func(43) expected, none recorded")
 	}
-	if val,ok := chkid["SSSAAAAAA"]; !ok || !val {
+	if val, ok := chkid["SSSAAAAAA"]; !ok || !val {
 		t.Errorf("Call of func(SSSAAAAAA) expected, none recorded")
 	}
-	if val,ok := chkid["SSSAAAAAB"]; !ok || !val {
+	if val, ok := chkid["SSSAAAAAB"]; !ok || !val {
 		t.Errorf("Call of func(SSSAAAAAB) expected, none recorded")
 	}
 

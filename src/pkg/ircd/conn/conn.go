@@ -9,9 +9,9 @@ import (
 
 type Conn struct {
 	net.Conn
-	active bool
+	active      bool
 	subscribers map[chan *parser.Message]bool
-	Error os.Error
+	Error       os.Error
 }
 
 func NewConn(nc net.Conn) *Conn {
@@ -47,7 +47,7 @@ func (c *Conn) readthread() {
 
 func (c *Conn) WriteMessage(message *parser.Message) {
 	bytes := message.Bytes()
-	n,err := c.Write(bytes)
+	n, err := c.Write(bytes)
 	if err != nil || n != len(bytes) {
 		c.Error = err
 		c.active = false
@@ -64,5 +64,5 @@ func (c *Conn) Subscribe(chn chan *parser.Message) {
 }
 
 func (c *Conn) Unsubscribe(chn chan *parser.Message) {
-	c.subscribers[chn] = false,false
+	c.subscribers[chn] = false, false
 }

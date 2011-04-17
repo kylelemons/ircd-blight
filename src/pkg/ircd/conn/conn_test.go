@@ -8,14 +8,14 @@ import (
 )
 
 type MockConn struct {
-	data []string
+	data      []string
 	lastwrite []byte
 }
 
-func (mc *MockConn) LocalAddr() net.Addr { return nil }
-func (mc *MockConn) RemoteAddr() net.Addr { return nil }
-func (mc *MockConn) SetTimeout(nsec int64) os.Error { return nil }
-func (mc *MockConn) SetReadTimeout(nsec int64) os.Error { return nil }
+func (mc *MockConn) LocalAddr() net.Addr                 { return nil }
+func (mc *MockConn) RemoteAddr() net.Addr                { return nil }
+func (mc *MockConn) SetTimeout(nsec int64) os.Error      { return nil }
+func (mc *MockConn) SetReadTimeout(nsec int64) os.Error  { return nil }
 func (mc *MockConn) SetWriteTimeout(nsec int64) os.Error { return nil }
 func (mc *MockConn) Close() os.Error {
 	mc.data = nil
@@ -82,24 +82,24 @@ func TestConn(t *testing.T) {
 
 func TestWriteMessage(t *testing.T) {
 	msg := &parser.Message{
-		Prefix: "server",
+		Prefix:  "server",
 		Command: "COMMAND",
-		Args: []string{"arg1", "arg2", "arg3 arg3"},
+		Args:    []string{"arg1", "arg2", "arg3 arg3"},
 	}
 	mc := new(MockConn)
 	conn := NewConn(mc)
 	conn.WriteMessage(msg)
 	if ":server COMMAND arg1 arg2 :arg3 arg3" != string(mc.lastwrite) {
 		t.Errorf("Expected write of %q, got %q", ":server COMMAND arg1 arg2 :arg3 arg3",
-				string(mc.lastwrite))
+			string(mc.lastwrite))
 	}
 }
 
 func BenchmarkWriteMessage(b *testing.B) {
 	msg := &parser.Message{
-		Prefix: "server",
+		Prefix:  "server",
 		Command: "COMMAND",
-		Args: []string{"arg1", "arg2", "arg3 arg3"},
+		Args:    []string{"arg1", "arg2", "arg3 arg3"},
 	}
 	mc := new(MockConn)
 	conn := NewConn(mc)

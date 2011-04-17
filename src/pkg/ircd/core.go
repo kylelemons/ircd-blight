@@ -8,16 +8,16 @@ import (
 )
 
 type Core struct {
-	Data *ds.DataStore
-	ports map[int]bool
+	Data     *ds.DataStore
+	ports    map[int]bool
 	listener *conn.Listener
 	messages chan *parser.Message
 }
 
 func NewCore() *Core {
 	core := &Core{
-		Data: ds.NewDataStore(),
-		ports: make(map[int]bool),
+		Data:     ds.NewDataStore(),
+		ports:    make(map[int]bool),
 		messages: make(chan *parser.Message),
 	}
 	return core
@@ -27,8 +27,8 @@ func (c *Core) Set(module, key string, val ds.Value) {
 	r := ds.NewReturn()
 	set := ds.Set{
 		Module: module,
-		Key: key,
-		Value: val,
+		Key:    key,
+		Value:  val,
 		Return: r,
 	}
 	c.Data.Control <- set
@@ -39,9 +39,9 @@ func (c *Core) Get(module, key string, def ds.Value) ds.Value {
 	r := ds.NewReturn()
 	get := &ds.Get{
 		Module: module,
-		Key: key,
+		Key:    key,
 		Return: r,
-		Value: def,
+		Value:  def,
 	}
 	c.Data.Control <- get
 	<-r
@@ -53,7 +53,7 @@ func (c *Core) Start() {
 
 	// Listen on each port
 	c.listener = conn.NewListener()
-	for _,port := range c.Get("Server", "ports", []int{6666,6667}).([]int) {
+	for _, port := range c.Get("Server", "ports", []int{6666, 6667}).([]int) {
 		c.listener.AddPort(port)
 		c.ports[port] = true
 	}
@@ -70,7 +70,7 @@ func (c *Core) Stop() {
 	// Listen on each port
 	for port := range c.ports {
 		c.listener.ClosePort(port)
-		c.ports[port] = false,false
+		c.ports[port] = false, false
 	}
 }
 

@@ -4,20 +4,20 @@ import (
 	"testing"
 )
 
-var parse_message_tests = []struct{
-	raw string
+var parse_message_tests = []struct {
+	raw             string
 	prefix, command string
-	args []string
+	args            []string
 }{
-{":server.kevlar.net NOTICE user :*** This is a test",
- "server.kevlar.net", "NOTICE", []string{"user", "*** This is a test"}},
-{":A B C", "A", "B", []string{"C"}},
-{"B C", "", "B", []string{"C"}},
+	{":server.kevlar.net NOTICE user :*** This is a test",
+		"server.kevlar.net", "NOTICE", []string{"user", "*** This is a test"}},
+	{":A B C", "A", "B", []string{"C"}},
+	{"B C", "", "B", []string{"C"}},
 }
 
 func TestParseMesage(t *testing.T) {
-	for i,test := range parse_message_tests {
-		m := ParseMessage([]byte(test.raw));
+	for i, test := range parse_message_tests {
+		m := ParseMessage([]byte(test.raw))
 		if test.prefix != m.Prefix {
 			t.Errorf("#d: Expected prefix %q, got %q", i, test.prefix, m.Prefix)
 		}
@@ -36,23 +36,24 @@ func TestParseMesage(t *testing.T) {
 	}
 }
 
-var build_message_tests = []struct{
-	expected string
+var build_message_tests = []struct {
+	expected        string
 	prefix, command string
-	args []string
+	args            []string
 }{
-{":server.kevlar.net NOTICE user :*** This is a test",
- "server.kevlar.net", "NOTICE", []string{"user", "*** This is a test"}},
-{":A B C", "A", "B", []string{"C"}},
-{"B C", "", "B", []string{"C"}},
-{":A B C D", "A", "B", []string{"C", "D"}},
+	{":server.kevlar.net NOTICE user :*** This is a test",
+		"server.kevlar.net", "NOTICE", []string{"user", "*** This is a test"}},
+	{":A B C", "A", "B", []string{"C"}},
+	{"B C", "", "B", []string{"C"}},
+	{":A B C D", "A", "B", []string{"C", "D"}},
 }
+
 func TestBuildMessage(t *testing.T) {
-	for i,test := range build_message_tests {
+	for i, test := range build_message_tests {
 		m := &Message{
-			Prefix: test.prefix,
+			Prefix:  test.prefix,
 			Command: test.command,
-			Args: test.args,
+			Args:    test.args,
 		}
 		bytes := m.Bytes()
 		str := m.String()
@@ -61,7 +62,7 @@ func TestBuildMessage(t *testing.T) {
 		}
 		if string(bytes) != str {
 			t.Errorf("Expected identical string and byte representation, got %q and %q", i,
-					bytes, str)
+				bytes, str)
 		}
 	}
 }

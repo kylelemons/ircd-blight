@@ -6,9 +6,9 @@ import (
 )
 
 type Message struct {
-	Prefix string
+	Prefix  string
 	Command string
-	Args []string
+	Args    []string
 }
 
 func NewMessage(pfx, cmd string, args []string) *Message {
@@ -22,13 +22,13 @@ func NewMessage(pfx, cmd string, args []string) *Message {
 func ParseMessage(line []byte) *Message {
 	line = bytes.TrimSpace(line)
 	if len(line) <= 0 {
-		return nil;
+		return nil
 	}
 	m := new(Message)
 	if line[0] == ':' {
 		split := bytes.Split(line, []byte{' '}, 2)
 		if len(split) <= 1 {
-			return nil;
+			return nil
 		}
 		m.Prefix = string(split[0][1:])
 		line = split[1]
@@ -37,7 +37,7 @@ func ParseMessage(line []byte) *Message {
 	args := bytes.Split(bytes.TrimSpace(split[0]), []byte{' '}, -1)
 	m.Command = string(args[0])
 	m.Args = make([]string, 0, len(args))
-	for _,arg := range args[1:] {
+	for _, arg := range args[1:] {
 		m.Args = append(m.Args, string(arg))
 	}
 	if len(split) > 1 {
@@ -54,7 +54,7 @@ func (m Message) Bytes() []byte {
 		buf.WriteByte(' ')
 	}
 	buf.WriteString(m.Command)
-	for i,arg := range m.Args {
+	for i, arg := range m.Args {
 		buf.WriteByte(' ')
 		if i == len(m.Args)-1 {
 			if strings.IndexAny(arg, " :") >= 0 {
@@ -69,4 +69,3 @@ func (m Message) Bytes() []byte {
 func (m Message) String() string {
 	return string(m.Bytes())
 }
-

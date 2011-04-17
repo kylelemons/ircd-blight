@@ -26,9 +26,9 @@ func TestAddPort(t *testing.T) {
 	}
 	if runtime.Gosched(); gcnt >= runtime.Goroutines() {
 		t.Errorf("Expected more than %d goroutines after AddPort, %d running", gcnt,
-				runtime.Goroutines())
+			runtime.Goroutines())
 	}
-	if listener,ok := l.ports[56561]; ok {
+	if listener, ok := l.ports[56561]; ok {
 		if listener == nil {
 			t.Errorf("Port listener should not be nil")
 		}
@@ -42,7 +42,7 @@ func TestAddPort(t *testing.T) {
 	}
 	if runtime.Gosched(); gcnt <= runtime.Goroutines() {
 		t.Errorf("Expected fewer than %d goroutines after Close(), %d running", gcnt,
-				runtime.Goroutines())
+			runtime.Goroutines())
 	}
 }
 
@@ -53,14 +53,14 @@ func TestClosePort(t *testing.T) {
 	l.ClosePort(56561)
 	// ClosePort is not synchronized, so give it some time (on mac, dialog pops up)
 	for i := 0; i < 100 && 0 != len(l.ports); i++ {
-		time.Sleep(1e6);
+		time.Sleep(1e6)
 	}
 	if runtime.Gosched(); 0 != len(l.ports) {
 		t.Errorf("After ClosePort(), ports should have 0 entries, got %d", len(l.ports))
 	}
 	if runtime.Gosched(); gcnt <= runtime.Goroutines() {
 		t.Errorf("Expected fewer than %d goroutines after ClosePort(), %d running", gcnt,
-				runtime.Goroutines())
+			runtime.Goroutines())
 	}
 	l.Close()
 	if 0 != len(l.ports) {
@@ -68,6 +68,6 @@ func TestClosePort(t *testing.T) {
 	}
 	if runtime.Gosched(); gcnt <= runtime.Goroutines() {
 		t.Errorf("Expected fewer than %d goroutines after Close(), %d running", gcnt,
-				runtime.Goroutines())
+			runtime.Goroutines())
 	}
 }

@@ -19,13 +19,13 @@ func errchk(err os.Error) {
 }
 
 func Run() {
-	proxy,err := net.Listen("tcp", ":6667")
+	proxy, err := net.Listen("tcp", ":6667")
 	errchk(err)
 
-	client,err := proxy.Accept()
+	client, err := proxy.Accept()
 	errchk(err)
 
-	server,err := net.Dial("tcp", "", "irc.freenode.net:6667")
+	server, err := net.Dial("tcp", "", "irc.freenode.net:6667")
 	errchk(err)
 
 	stopped := make(chan bool)
@@ -33,12 +33,12 @@ func Run() {
 	go func() {
 		in := bufio.NewReader(client)
 		for err == nil {
-			line, err := in.ReadBytes('\n');
+			line, err := in.ReadBytes('\n')
 			if err == os.EOF {
 				break
 			}
 			errchk(err)
-			server.Write(line);
+			server.Write(line)
 			m := parser.ParseMessage(line)
 			fmt.Printf("<< %s\n", m)
 		}
@@ -49,12 +49,12 @@ func Run() {
 	go func() {
 		in := bufio.NewReader(server)
 		for err == nil {
-			line, err := in.ReadBytes('\n');
+			line, err := in.ReadBytes('\n')
 			if err == os.EOF {
 				break
 			}
 			errchk(err)
-			client.Write(line);
+			client.Write(line)
 			m := parser.ParseMessage(line)
 			fmt.Printf("<< %s\n", m)
 		}
