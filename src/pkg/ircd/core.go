@@ -76,6 +76,6 @@ func (c *Core) Stop() {
 
 func (c *Core) run() {
 	for message := range c.messages {
-		fmt.Printf("Message: %s", message)
+		fmt.Printf("Message: %s\n", message)
 	}
 }

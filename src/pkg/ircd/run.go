@@ -21,4 +21,6 @@ func errchk(err os.Error) {
 func Run() {
 	c := NewCore()
 	c.Start()
+	select {
+	}
 }
