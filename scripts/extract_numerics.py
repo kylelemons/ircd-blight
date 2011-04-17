@@ -17,7 +17,7 @@ def process_rfc(files):
             contents += f.read()
 
     numerics = numeric.findall(contents)
-    print "package ircd"
+    print "package parser"
     print ""
     print "// Automatically generated from %s" % (file)
     numerics.sort(key=lambda x: x[0])
