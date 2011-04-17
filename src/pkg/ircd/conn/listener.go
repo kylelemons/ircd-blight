@@ -62,7 +62,7 @@ func (l *Listener) ClosePort(portno int) {
 		return
 	}
 	listener.Close()
-	c, _ := net.Dial("tcp", "", fmt.Sprintf(":%d", portno))
+	c, _ := net.Dial("tcp", fmt.Sprintf(":%d", portno))
 	if c != nil {
 		c.Close()
 	}
@@ -72,7 +72,7 @@ func (l *Listener) ClosePort(portno int) {
 func (l *Listener) Close() {
 	for port, listener := range l.ports {
 		listener.Close()
-		c, _ := net.Dial("tcp", "", fmt.Sprintf(":%d", port))
+		c, _ := net.Dial("tcp", fmt.Sprintf(":%d", port))
 		if c != nil {
 			c.Close()
 		}
