@@ -1,28 +1,38 @@
 # Explicitly make targets phony, just in case
-.PHONY : all deppkg pkgs cmds install clean nuke test bench
+.PHONY : all pkgs cmds install clean nuke test bench
+
+MAKE += -s
+
+PKGS = parser user conn datastore core
+CMDS = ircd
 
 # By default, build everything
-all : pkgs ircd
+all : pkgs cmds
+	@
 
-deppkg :
-	@echo "Installing dependencies..."
-	#goinstall -u goconf.googlecode.com/hg
-	#goinstall -u log4go.googlecode.com/hg
+define recurse
+@echo "$(3) $(1) $(2)" | sed -e 's/^all/build/'
+@$(MAKE) -C src/$(1)/$(2) $(3)
+
+endef
+
+define all_packages
+$(foreach pkg,$(PKGS),$(call recurse,pkg,$(pkg),$(1)))
+endef
+
+define all_commands
+$(foreach cmd,$(CMDS),$(call recurse,cmd,$(cmd),$(1)))
+endef
 
 pkgs :
-	@echo "Building packages..."
-	@$(MAKE) -C src/pkg/ircd -f Makefile.sub install
-	@$(MAKE) -C src/pkg/ircd install
-
-ircd : pkgs
-	@echo "Building ircd..."
-	@$(MAKE) -C src/cmd/ircd
+	$(call all_packages,install)
 
 cmds :
-	@echo "Building helpers..."
+	$(call all_commands,all)
 
-test bench clean nuke install :
-	@echo "Performing $@..."
-	@$(MAKE) -C src/pkg/ircd -f Makefile.sub $@
-	@$(MAKE) -C src/pkg/ircd $@
-	@$(MAKE) -C src/cmd/ircd $@
+install clean nuke :
+	$(call all_packages,$@)
+	$(call all_commands,$@)
+
+test bench :
+	$(call all_packages,$@)

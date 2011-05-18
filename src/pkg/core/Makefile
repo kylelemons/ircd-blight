@@ -1,13 +1,9 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=kevlar/ircd
+TARG=kevlar/ircd/core
 GOFILES=\
-	core.go\
 	run.go\
-
-ovrd : sub all
+	core.go\
 
 include $(GOROOT)/src/Make.pkg
 
-sub :
-	$(MAKE) -f Makefile.sub install

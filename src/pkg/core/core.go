@@ -1,51 +1,52 @@
-package ircd
+package core
 
 import (
 	"fmt"
 	"kevlar/ircd/conn"
 	"kevlar/ircd/parser"
-	ds "kevlar/ircd/datastore"
 )
 
 type Core struct {
-	Data     *ds.DataStore
 	ports    map[int]bool
 	listener *conn.Listener
 	messages chan *parser.Message
+	params   map[string]map[string]string
 }
 
 func NewCore() *Core {
 	core := &Core{
-		Data:     ds.NewDataStore(),
 		ports:    make(map[int]bool),
 		messages: make(chan *parser.Message),
+		params:   make(map[string]map[string]string),
 	}
 	return core
 }
 
-func (c *Core) Set(module, key string, val ds.Value) {
-	r := ds.NewReturn()
-	set := ds.Set{
-		Module: module,
-		Key:    key,
-		Value:  val,
-		Return: r,
+func (c *Core) Set(module, key, val string) {
+	if _, ok := c.params[module]; !ok {
+		c.params[module] = make(map[string]string)
 	}
-	c.Data.Control <- set
-	<-r
+	c.params[module][key] = val
 }
 
-func (c *Core) Get(module, key string, def ds.Value) ds.Value {
-	r := ds.NewReturn()
-	get := &ds.Get{
-		Module: module,
-		Key:    key,
-		Return: r,
-		Value:  def,
+func (c *Core) Get(module, key, defval string) string {
+	if mod, ok := c.params[module]; ok {
+		if val, ok := mod[key]; ok {
+			return val
+		}
 	}
-	c.Data.Control <- get
-	<-r
-	return get.Value
+	return defval
+}
+
+func (c *Core) Unset(module, key string) {
+	if mod, ok := c.params[module]; ok {
+		if _, ok := mod[key]; ok {
+			mod[key] = "", false
+		}
+		if len(mod) == 0 {
+			c.params[module] = nil, false
+		}
+	}
 }
 
 func (c *Core) Start() {
@@ -53,7 +54,7 @@ func (c *Core) Start() {
 
 	// Listen on each port
 	c.listener = conn.NewListener()
-	for _, port := range c.Get("Server", "ports", []int{6666, 6667}).([]int) {
+	for _, port := range []int{6666, 6667} {
 		c.listener.AddPort(port)
 		c.ports[port] = true
 	}

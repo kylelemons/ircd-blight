@@ -1,9 +1,9 @@
 package main
 
 import (
-	"kevlar/ircd"
+	"kevlar/ircd/core"
 )
 
 func main() {
-	ircd.Run()
+	core.Run()
 }
