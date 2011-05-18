@@ -8,4 +8,5 @@ test bench clean nuke install :
 	@echo "Performing $@..."
 	@$(MAKE) -C parser $@
 	@$(MAKE) -C conn $@
+	@$(MAKE) -C user $@
 	@$(MAKE) -C datastore $@
