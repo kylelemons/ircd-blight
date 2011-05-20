@@ -3,7 +3,7 @@
 
 MAKE += -s
 
-PKGS = parser user conn datastore core
+PKGS = parser user conn core
 CMDS = ircd
 
 # By default, build everything
