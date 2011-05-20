@@ -34,7 +34,7 @@ func OptArgs(required, optional int) CallConstraints {
 }
 
 var (
-	AnyArgs = &CallConstraints{
+	AnyArgs = CallConstraints{
 		MinArgs: 0,
 		MaxArgs: -1,
 	}
@@ -55,7 +55,7 @@ var (
 func Register(hook string, when ExecutionMask, args CallConstraints,
 fn func(string, ExecutionMask, *parser.Message)) *Hook {
 	if _, ok := registeredHooks[hook]; !ok {
-		registeredHooks[hook] = make([]*Hook, 1)
+		registeredHooks[hook] = make([]*Hook, 0, 1)
 	}
 	h := &Hook{
 		When:        when,
@@ -69,7 +69,7 @@ fn func(string, ExecutionMask, *parser.Message)) *Hook {
 // TODO(kevlar): Add source? Something to send numerics back on
 func Dispatch(hookName string, mask ExecutionMask, message *parser.Message) {
 	for _, hook := range registeredHooks[hookName] {
-		if hook.When|mask == mask {
+		if hook.When&mask == mask {
 			// TODO(kevlar): Check callconstraints
 			go hook.Func(hookName, mask, message)
 			hook.Calls++
