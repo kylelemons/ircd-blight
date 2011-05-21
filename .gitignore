@@ -20,6 +20,7 @@ _test
 _testmain.go
 *.exe
 *.sw[op]
+*.orig
 
 syntax: glob
 src/cmd/ircd/ircd
