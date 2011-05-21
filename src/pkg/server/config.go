@@ -102,6 +102,7 @@ type Configuration struct {
 	Admin    string
 	Network  *Network
 	Prefix   string
+	Ports    []*Ports
 	Class    []*Class
 	Operator []*Oper
 }

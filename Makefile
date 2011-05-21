@@ -1,5 +1,5 @@
 # Explicitly make targets phony, just in case
-.PHONY : all pkgs cmds install clean nuke test bench
+.PHONY : all pkgs cmds install clean nuke test bench gofmt
 
 MAKE += -s
 
@@ -36,3 +36,6 @@ install clean nuke :
 
 test bench :
 	$(call all_packages,$@)
+
+gofmt :
+	@gofmt -w `find . -name "*.go"`

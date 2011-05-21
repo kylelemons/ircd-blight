@@ -22,6 +22,15 @@ var testDefaultConfig = &Configuration{
 			},
 		}},
 	},
+	Ports: []*Ports{
+		&Ports{
+			PortString: "6666-6669",
+		},
+		&Ports{
+			PortString: "6696-6699,9999",
+			SSL:        "true",
+		},
+	},
 	Class: []*Class{&Class{
 		Name: "users",
 		Host: []string{

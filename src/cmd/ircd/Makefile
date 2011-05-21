@@ -7,6 +7,6 @@ GOFILES=\
 	main.go\
 
 # Rebuild when library changes
-PREREQ=$(PKGDIR)/kevlar/ircd/core.a
+PREREQ=$(PKGDIR)/kevlar/ircd/*.a
 
 include $(GOROOT)/src/Make.cmd
