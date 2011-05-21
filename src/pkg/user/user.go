@@ -41,6 +41,10 @@ type User struct {
 	Name  string
 }
 
+func (u *User) ID() string {
+	return u.id
+}
+
 func NextUserID() string {
 	return UserIDPrefix + <-userIDs
 }

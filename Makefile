@@ -3,7 +3,7 @@
 
 MAKE += -s
 
-PKGS = parser user conn core
+PKGS = parser user conn core server
 CMDS = ircd
 
 # By default, build everything
