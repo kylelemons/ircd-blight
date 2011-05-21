@@ -6,9 +6,10 @@ import (
 )
 
 type Message struct {
-	Prefix  string
-	Command string
-	Args    []string
+	Prefix   string
+	Command  string
+	Args     []string
+	SenderID string
 }
 
 func NewMessage(pfx, cmd string, args []string) *Message {
@@ -35,7 +36,7 @@ func ParseMessage(line []byte) *Message {
 	}
 	split := bytes.Split(line, []byte{':'}, 2)
 	args := bytes.Split(bytes.TrimSpace(split[0]), []byte{' '}, -1)
-	m.Command = string(args[0])
+	m.Command = string(bytes.ToUpper(args[0]))
 	m.Args = make([]string, 0, len(args))
 	for _, arg := range args[1:] {
 		m.Args = append(m.Args, string(arg))

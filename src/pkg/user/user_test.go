@@ -1,7 +1,9 @@
 package user
 
 import (
+	"os"
 	"testing"
+	"kevlar/ircd/parser"
 )
 
 var testIDs = map[int64]string{
@@ -25,6 +27,87 @@ func TestGenIDs(t *testing.T) {
 			if got != want {
 				t.Errorf("id[%d] = %q, got %q", i, got, want)
 			}
+		}
+	}
+}
+
+var dummyNick = "[Dummy]"
+var dummyLower = "{dummy}"
+var dummyMixed = "{dUMmy]"
+var nickSetTests = []struct {
+	Nick  string
+	Error os.Error
+	Count int
+	After string
+}{
+	{
+		Nick:  "14029804",
+		Error: parser.Numeric(parser.ERR_ERRONEUSNICKNAME),
+		Count: 1,
+		After: "*",
+	},
+	{
+		Nick:  dummyNick,
+		Error: parser.Numeric(parser.ERR_NICKNAMEINUSE),
+		Count: 1,
+		After: "*",
+	},
+	{
+		Nick:  "Nickname",
+		Error: nil,
+		Count: 2,
+		After: "Nickname",
+	},
+	{
+		Nick:  dummyNick,
+		Error: parser.Numeric(parser.ERR_NICKNAMEINUSE),
+		Count: 2,
+		After: "Nickname",
+	},
+	{
+		Nick:  dummyMixed,
+		Error: parser.Numeric(parser.ERR_NICKNAMEINUSE),
+		Count: 2,
+		After: "Nickname",
+	},
+	{
+		Nick:  "@Nick",
+		Error: parser.Numeric(parser.ERR_ERRONEUSNICKNAME),
+		Count: 2,
+		After: "Nickname",
+	},
+	{
+		Nick:  "NewNick",
+		Error: nil,
+		Count: 2,
+		After: "NewNick",
+	},
+}
+
+func TestSetNick(t *testing.T) {
+	// Set up the dummy user
+	dummy := Get(NextUserID())
+	err := dummy.SetNick(dummyNick)
+	if err != nil {
+		t.Fatalf("dummy.SetNick(%s) returned %s", dummyNick, err)
+	}
+	if got, want := userNicks[dummyLower], dummy.ID(); got != want {
+		t.Errorf("map[%q] = %q, want %q", dummyLower, got, want)
+	}
+
+	// Set up victim user
+	victim := Get(NextUserID())
+
+	for idx, test := range nickSetTests {
+		err := victim.SetNick(test.Nick)
+		if got, want := err, test.Error; got != want {
+			t.Errorf("#%d: SetNick(%q) = %#v, want %#v", idx, test.Nick, got, want)
+		}
+		if got, want := len(userNicks), test.Count; got != want {
+			t.Errorf("#%d: len(userNicks) = %d, want %d", idx, got, want)
+		}
+		if got, want := victim.Nick(), test.After; got != want {
+			t.Errorf("#%d: nick after = %q, want %q", idx, got, want)
 		}
 	}
 }

@@ -62,7 +62,7 @@ func TestConn(t *testing.T) {
 	if "source" != message.Prefix {
 		t.Errorf("Message prefix %q expected, got %q", "source", message.Prefix)
 	}
-	if "command" != message.Command {
+	if "COMMAND" != message.Command {
 		t.Errorf("Message command %q expected, got %q", "command", message.Command)
 	}
 	if 2 != len(message.Args) || "arg" != message.Args[0] || "longarg" != message.Args[1] {

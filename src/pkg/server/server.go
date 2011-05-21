@@ -3,6 +3,9 @@ package server
 import (
 	"fmt"
 	"kevlar/ircd/conn"
+	"kevlar/ircd/core"
+	"kevlar/ircd/parser"
+	"kevlar/ircd/user"
 	"os"
 )
 
@@ -19,10 +22,16 @@ func Start() {
 		}
 	}
 
+	messages := make(chan *parser.Message)
+
 	for {
 		select {
+		// TODO(kevlar): Event dispatch channel?
+		case msg := <-messages:
+			core.DispatchMessage(msg)
 		case conn := <-listener.Incoming:
-			go handleRegistration(conn)
+			user.Get(conn.ID())
+			conn.Subscribe(messages)
 		}
 	}
 }

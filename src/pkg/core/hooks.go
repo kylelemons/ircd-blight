@@ -2,6 +2,7 @@ package core
 
 import (
 	"kevlar/ircd/parser"
+	"kevlar/ircd/user"
 )
 
 // Choose in what contexts a hook is called
@@ -66,8 +67,22 @@ fn func(string, ExecutionMask, *parser.Message)) *Hook {
 	return h
 }
 
-// TODO(kevlar): Add source? Something to send numerics back on
-func Dispatch(hookName string, mask ExecutionMask, message *parser.Message) {
+// TODO(kevlar): Add channel to send messages back on
+func DispatchMessage(message *parser.Message) {
+	hookName := message.Command
+	_, _, _, reg, ok := user.GetInfo(message.SenderID)
+	if !ok {
+		panic("Unknown user: " + message.SenderID)
+	}
+	var mask ExecutionMask
+	switch reg {
+	case user.Unregistered:
+		mask |= Registration
+	case user.RegisteredAsUser:
+		mask |= User
+	case user.RegisteredAsServer:
+		mask |= Server
+	}
 	for _, hook := range registeredHooks[hookName] {
 		if hook.When&mask == mask {
 			// TODO(kevlar): Check callconstraints

@@ -5,6 +5,9 @@ ROOT=../../../
 TARG=kevlar/ircd/parser
 GOFILES=\
 	parser.go\
+	commands.go\
+	numeric.go\
+	util.go\
 	rfc2812.go\
 
 # Also remove generated rfc files

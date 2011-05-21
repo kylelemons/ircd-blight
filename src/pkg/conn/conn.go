@@ -5,6 +5,7 @@ import (
 	"net"
 	"encoding/line"
 	"kevlar/ircd/parser"
+	"kevlar/ircd/user"
 )
 
 type Conn struct {
@@ -12,15 +13,22 @@ type Conn struct {
 	active      bool
 	subscribers map[chan *parser.Message]bool
 	Error       os.Error
+	id          string
 }
 
 func NewConn(nc net.Conn) *Conn {
-	c := new(Conn)
-	c.Conn = nc
-	c.active = true
-	c.subscribers = make(map[chan *parser.Message]bool)
+	c := &Conn{
+		Conn:        nc,
+		active:      true,
+		subscribers: make(map[chan *parser.Message]bool),
+		id:          user.NextUserID(),
+	}
 	go c.readthread()
 	return c
+}
+
+func (c *Conn) ID() string {
+	return c.id
 }
 
 func (c *Conn) readthread() {
@@ -37,6 +45,7 @@ func (c *Conn) readthread() {
 			return
 		}
 		message := parser.ParseMessage(line)
+		message.SenderID = c.id
 		if message != nil {
 			for subscriber := range c.subscribers {
 				subscriber <- message
