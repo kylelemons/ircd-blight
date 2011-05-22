@@ -39,13 +39,44 @@ func Start() {
 			log.Printf("[%s] >> %s\n", msg.SenderID, msg)
 			core.DispatchMessage(msg, outgoing)
 		case msg := <-outgoing:
+			// Count the number of messages sent
 			sentcount := 0
+
+			// For simplicity, * in the prefix or as the first argument
+			// is replaced by the user the message is sent to
 			setnick := len(msg.Args) > 0 && msg.Args[0] == "*"
 			setprefix := msg.Prefix == "*"
-			closeafter := msg.Command == parser.CMD_ERROR
-			if len(msg.Prefix) == 0 && !closeafter {
+
+			// Close the connection and remove the prefix if we are sending an ERROR
+			closeafter := false
+			if msg.Command == parser.CMD_ERROR {
+				closeafter = true
+				msg.Prefix = ""
+				// Make sure a prefix is specified (use the server name)
+			} else if len(msg.Prefix) == 0 {
 				msg.Prefix = Config.Name
 			}
+
+			// Examine all arguments for UIDs and replace them
+			if isuid(msg.Prefix) {
+				nick, user, _, _, ok := user.GetInfo(msg.Prefix)
+				if !ok {
+					log.Printf("Warning: Nonexistent ID %s as prefix", msg.Prefix)
+				} else {
+					msg.Prefix = nick + "!" + user + "@host" // TODO(kevlar): hostname
+				}
+			}
+			for i := range msg.Args {
+				if isuid(msg.Args[i]) {
+					nick, _, _, _, ok := user.GetInfo(msg.Args[i])
+					if !ok {
+						log.Printf("Warning: Nonexistent ID %s as argument", msg.Args[i])
+						continue
+					}
+					msg.Args[i] = nick
+				}
+			}
+
 			for _, id := range msg.DestIDs {
 				conn, ok := connIDs[id]
 				if !ok {
@@ -73,7 +104,7 @@ func Start() {
 				}
 			}
 			if sentcount == 0 {
-				log.Printf("Dropped outgoing message: %s", msg)
+				log.Printf("Warning: Dropped outgoing message: %s", msg)
 			}
 		case conn := <-listener.Incoming:
 			id := conn.ID()
@@ -89,4 +120,8 @@ func Run() {
 	LoadConfigString(DefaultXML)
 
 	Start()
+}
+
+func isuid(id string) bool {
+	return len(id) == 9 && id[0] >= '0' && id[0] <= '9'
 }

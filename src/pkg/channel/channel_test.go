@@ -63,7 +63,7 @@ func TestJoinPartChannel(t *testing.T) {
 	for idx, test := range testJoinPart {
 		var err os.Error
 		var notify []string
-		channel := Get(test.Channel, true)
+		channel, _ := Get(test.Channel, true)
 		switch test.Command {
 		case parser.CMD_JOIN:
 			notify, err = channel.Join(test.ID, "")
@@ -105,7 +105,7 @@ func BenchmarkJoin(b *testing.B) {
 		go func(i int) {
 			channame := chans[rand.Intn(len(chans))]
 			userid := users[rand.Intn(len(users))]
-			channel := Get(channame, true)
+			channel, _ := Get(channame, true)
 			channel.Join(userid, "")
 			wg.Done()
 		}(i)

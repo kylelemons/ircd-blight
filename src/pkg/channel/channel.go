@@ -22,17 +22,21 @@ type Channel struct {
 
 // Get the Channel structure for the given channel.  If it does not exist and
 // create is true, it is created.
-func Get(name string, create bool) *Channel {
+func Get(name string, create bool) (*Channel, os.Error) {
 	chanMutex.Lock()
 	defer chanMutex.Unlock()
+
+	if !parser.ValidChannel(name) {
+		return nil, parser.NewNumeric(parser.ERR_NOSUCHCHANNEL, name)
+	}
 
 	lowname := parser.ToLower(name)
 
 	// Database lookup?
 	if c, ok := chanMap[lowname]; ok {
-		return c
+		return c, nil
 	} else if !create {
-		return nil
+		return nil, parser.NewNumeric(parser.ERR_NOSUCHCHANNEL, name)
 	}
 
 	c := &Channel{
@@ -42,7 +46,7 @@ func Get(name string, create bool) *Channel {
 	}
 
 	chanMap[lowname] = c
-	return c
+	return c, nil
 }
 
 // Get the channel name (immutable).

@@ -46,9 +46,10 @@ func (n *Numeric) String() string {
 	return name
 }
 
-func (n *Numeric) Message() *Message {
+func (n *Numeric) Message(destIDs ...string) *Message {
 	return &Message{
 		Command: n.num,
 		Args:    n.args,
+		DestIDs: destIDs,
 	}
 }
