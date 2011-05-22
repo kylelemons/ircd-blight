@@ -92,8 +92,8 @@ func Start() {
 						msg.Prefix = nick
 					}
 				}
-				log.Printf("[%s] << %s\n", id, msg)
 				conn.WriteMessage(msg)
+				log.Printf("[%s] << %s\n", id, msg)
 				sentcount++
 				if closeafter {
 					log.Printf("[%s] ** Connection terminated", id)

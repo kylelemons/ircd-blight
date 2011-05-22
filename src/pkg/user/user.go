@@ -156,6 +156,7 @@ func NextUserID() string {
 	return UserIDPrefix + <-userIDs
 }
 
+// Atomically retrieve user information.
 func GetInfo(id string) (nick, user, name string, regType userType, ok bool) {
 	userMutex.RLock()
 	defer userMutex.RUnlock()
@@ -166,6 +167,20 @@ func GetInfo(id string) (nick, user, name string, regType userType, ok bool) {
 	}
 
 	nick, user, name, regType = u.Info()
+	return
+}
+
+// Get the ID for a particular nic
+func GetID(nick string) (id string, err os.Error) {
+	userMutex.RLock()
+	defer userMutex.RUnlock()
+
+	lownick := parser.ToLower(nick)
+
+	var ok bool
+	if id, ok = userNicks[lownick]; !ok {
+		err = parser.NewNumeric(parser.ERR_NOSUCHNICK, nick)
+	}
 	return
 }
 
