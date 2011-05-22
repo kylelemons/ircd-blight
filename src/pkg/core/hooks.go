@@ -12,6 +12,7 @@ const (
 	Registration ExecutionMask = 1 << iota
 	User
 	Server
+	Any ExecutionMask = Registration | User | Server
 )
 
 // Choose how many arguments a hook needs to be called
@@ -46,7 +47,7 @@ type Hook struct {
 	When        ExecutionMask
 	Constraints CallConstraints
 	Calls       int
-	Func        func(hook string, when ExecutionMask, message *parser.Message)
+	Func        func(hook string, message *parser.Message, out chan<- *parser.Message)
 }
 
 var (
@@ -54,7 +55,7 @@ var (
 )
 
 func Register(hook string, when ExecutionMask, args CallConstraints,
-fn func(string, ExecutionMask, *parser.Message)) *Hook {
+fn func(string, *parser.Message, chan<- *parser.Message)) *Hook {
 	if _, ok := registeredHooks[hook]; !ok {
 		registeredHooks[hook] = make([]*Hook, 0, 1)
 	}
@@ -68,7 +69,7 @@ fn func(string, ExecutionMask, *parser.Message)) *Hook {
 }
 
 // TODO(kevlar): Add channel to send messages back on
-func DispatchMessage(message *parser.Message) {
+func DispatchMessage(message *parser.Message, out chan<- *parser.Message) {
 	hookName := message.Command
 	_, _, _, reg, ok := user.GetInfo(message.SenderID)
 	if !ok {
@@ -86,7 +87,7 @@ func DispatchMessage(message *parser.Message) {
 	for _, hook := range registeredHooks[hookName] {
 		if hook.When&mask == mask {
 			// TODO(kevlar): Check callconstraints
-			go hook.Func(hookName, mask, message)
+			go hook.Func(hookName, message, out)
 			hook.Calls++
 		}
 	}

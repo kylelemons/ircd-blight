@@ -42,13 +42,13 @@ var nickSetTests = []struct {
 }{
 	{
 		Nick:  "14029804",
-		Error: parser.Numeric(parser.ERR_ERRONEUSNICKNAME),
+		Error: parser.NewNumeric(parser.ERR_ERRONEUSNICKNAME, ""),
 		Count: 1,
 		After: "*",
 	},
 	{
 		Nick:  dummyNick,
-		Error: parser.Numeric(parser.ERR_NICKNAMEINUSE),
+		Error: parser.NewNumeric(parser.ERR_NICKNAMEINUSE, ""),
 		Count: 1,
 		After: "*",
 	},
@@ -60,19 +60,19 @@ var nickSetTests = []struct {
 	},
 	{
 		Nick:  dummyNick,
-		Error: parser.Numeric(parser.ERR_NICKNAMEINUSE),
+		Error: parser.NewNumeric(parser.ERR_NICKNAMEINUSE, ""),
 		Count: 2,
 		After: "Nickname",
 	},
 	{
 		Nick:  dummyMixed,
-		Error: parser.Numeric(parser.ERR_NICKNAMEINUSE),
+		Error: parser.NewNumeric(parser.ERR_NICKNAMEINUSE, ""),
 		Count: 2,
 		After: "Nickname",
 	},
 	{
 		Nick:  "@Nick",
-		Error: parser.Numeric(parser.ERR_ERRONEUSNICKNAME),
+		Error: parser.NewNumeric(parser.ERR_ERRONEUSNICKNAME, ""),
 		Count: 2,
 		After: "Nickname",
 	},
@@ -100,7 +100,7 @@ func TestSetNick(t *testing.T) {
 
 	for idx, test := range nickSetTests {
 		err := victim.SetNick(test.Nick)
-		if got, want := err, test.Error; got != want {
+		if got, want := err, test.Error; got != want && got.String() != want.String() {
 			t.Errorf("#%d: SetNick(%q) = %#v, want %#v", idx, test.Nick, got, want)
 		}
 		if got, want := len(userNicks), test.Count; got != want {

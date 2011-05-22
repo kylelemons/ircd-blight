@@ -105,7 +105,7 @@ func (u *User) Info() (nick, user, name string, regType userType) {
 // Set the user's nick
 func (u *User) SetNick(nick string) os.Error {
 	if !parser.ValidNick(nick) {
-		return parser.Numeric(parser.ERR_ERRONEUSNICKNAME)
+		return parser.NewNumeric(parser.ERR_ERRONEUSNICKNAME, nick)
 	}
 
 	lownick := parser.ToLower(nick)
@@ -117,7 +117,7 @@ func (u *User) SetNick(nick string) os.Error {
 		if id == u.ID() {
 			return nil
 		}
-		return parser.Numeric(parser.ERR_NICKNAMEINUSE)
+		return parser.NewNumeric(parser.ERR_NICKNAMEINUSE, nick)
 	}
 	userNicks[lownick] = u.ID()
 
@@ -134,7 +134,7 @@ func (u *User) SetNick(nick string) os.Error {
 func (u *User) SetUser(user, name string) os.Error {
 	if !parser.ValidNick(user) {
 		// BUG(kevlar): Document this behavior
-		return parser.Numeric(parser.ERR_NEEDMOREPARAMS)
+		return parser.NewNumeric(parser.ERR_NEEDMOREPARAMS)
 	}
 
 	u.mutex.Lock()

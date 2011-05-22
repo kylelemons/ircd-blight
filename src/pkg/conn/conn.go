@@ -2,6 +2,7 @@ package conn
 
 import (
 	"os"
+	"log"
 	"net"
 	"encoding/line"
 	"kevlar/ircd/parser"
@@ -11,7 +12,8 @@ import (
 type Conn struct {
 	net.Conn
 	active      bool
-	subscribers map[chan *parser.Message]bool
+	subscribers map[chan<- *parser.Message]bool
+	onclose     map[chan<- string]bool
 	Error       os.Error
 	id          string
 }
@@ -20,11 +22,19 @@ func NewConn(nc net.Conn) *Conn {
 	c := &Conn{
 		Conn:        nc,
 		active:      true,
-		subscribers: make(map[chan *parser.Message]bool),
+		subscribers: make(map[chan<- *parser.Message]bool),
+		onclose:     make(map[chan<- string]bool),
 		id:          user.NextUserID(),
 	}
 	go c.readthread()
 	return c
+}
+
+func (c *Conn) Close() os.Error {
+	for ch := range c.onclose {
+		ch <- c.id
+	}
+	return c.Conn.Close()
 }
 
 func (c *Conn) ID() string {
@@ -56,7 +66,9 @@ func (c *Conn) readthread() {
 
 func (c *Conn) WriteMessage(message *parser.Message) {
 	bytes := message.Bytes()
+	bytes = append(bytes, '\r', '\n')
 	n, err := c.Write(bytes)
+	log.Printf("[%s] Wrote %d bytes", c.id, n)
 	if err != nil || n != len(bytes) {
 		c.Error = err
 		c.active = false
@@ -68,10 +80,18 @@ func (c *Conn) Active() bool {
 	return c.active
 }
 
-func (c *Conn) Subscribe(chn chan *parser.Message) {
+func (c *Conn) Subscribe(chn chan<- *parser.Message) {
 	c.subscribers[chn] = true
+}
+
+func (c *Conn) SubscribeClose(chn chan<- string) {
+	c.onclose[chn] = true
 }
 
 func (c *Conn) Unsubscribe(chn chan *parser.Message) {
 	c.subscribers[chn] = false, false
+}
+
+func (c *Conn) UnsubscribeClose(chn chan<- string) {
+	c.onclose[chn] = false, false
 }

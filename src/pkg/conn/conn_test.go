@@ -89,7 +89,7 @@ func TestWriteMessage(t *testing.T) {
 	mc := new(MockConn)
 	conn := NewConn(mc)
 	conn.WriteMessage(msg)
-	if ":server COMMAND arg1 arg2 :arg3 arg3" != string(mc.lastwrite) {
+	if ":server COMMAND arg1 arg2 :arg3 arg3\r\n" != string(mc.lastwrite) {
 		t.Errorf("Expected write of %q, got %q", ":server COMMAND arg1 arg2 :arg3 arg3",
 			string(mc.lastwrite))
 	}

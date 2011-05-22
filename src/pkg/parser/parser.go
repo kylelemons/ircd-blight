@@ -6,10 +6,12 @@ import (
 )
 
 type Message struct {
-	Prefix   string
-	Command  string
-	Args     []string
+	Prefix  string
+	Command string
+	Args    []string
+
 	SenderID string
+	DestIDs  []string
 }
 
 func NewMessage(pfx, cmd string, args []string) *Message {
