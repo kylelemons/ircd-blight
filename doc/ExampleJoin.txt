@@ -1,0 +1,5 @@
+JOIN #ekocli
+:EkoCLI!~EkoCLI@redacted.comcastbusiness.net JOIN :#ekocli
+:card.freenode.net MODE #ekocli +ns
+:card.freenode.net 353 eocli @ #ekocli :@eocli
+:card.freenode.net 366 eocli #ekocli :End of /NAMES list.

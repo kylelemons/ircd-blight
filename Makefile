@@ -3,7 +3,7 @@
 
 MAKE += -s
 
-PKGS = parser user conn core server
+PKGS = parser user channel conn core server
 CMDS = ircd rfc2go
 
 # By default, build everything
@@ -34,7 +34,7 @@ install clean nuke :
 	$(call all_packages,$@)
 	$(call all_commands,$@)
 
-test bench :
+test bench : install
 	$(call all_packages,$@)
 
 # Format source files

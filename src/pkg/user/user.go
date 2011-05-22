@@ -74,24 +74,18 @@ func (u *User) Nick() string {
 	return u.nick
 }
 
-// Get the username.
+// Get the username (immutable).
 func (u *User) User() string {
-	u.mutex.RLock()
-	defer u.mutex.RUnlock()
 	return u.user
 }
 
-// Get the user's long name.
+// Get the user's long name (immutable).
 func (u *User) Name() string {
-	u.mutex.RLock()
-	defer u.mutex.RUnlock()
 	return u.name
 }
 
-// Get the user's registration type.
+// Get the user's registration type (immutable).
 func (u *User) Type() userType {
-	u.mutex.RLock()
-	defer u.mutex.RUnlock()
 	return u.utyp
 }
 
@@ -132,7 +126,11 @@ func (u *User) SetNick(nick string) os.Error {
 }
 
 func (u *User) SetUser(user, name string) os.Error {
-	if !parser.ValidNick(user) {
+	if len(u.user) > 0 {
+		return parser.NewNumeric(parser.ERR_ALREADYREGISTRED)
+	}
+
+	if !parser.ValidNick(user) || len(name) == 0 {
 		// BUG(kevlar): Document this behavior
 		return parser.NewNumeric(parser.ERR_NEEDMOREPARAMS)
 	}
@@ -145,10 +143,12 @@ func (u *User) SetUser(user, name string) os.Error {
 }
 
 // Set the user's type
-func (u *User) SetType(newType userType) {
-	u.mutex.Lock()
-	defer u.mutex.Unlock()
+func (u *User) SetType(newType userType) os.Error {
+	if u.utyp != Unregistered {
+		return parser.NewNumeric(parser.ERR_ALREADYREGISTRED)
+	}
 	u.utyp = newType
+	return nil
 }
 
 // Get the next available unique ID.

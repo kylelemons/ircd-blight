@@ -18,3 +18,6 @@
 :verne.freenode.net 372 EkoCLI :- Thanks to Choopa 'www.choopa.com' for providing this server!
 :verne.freenode.net 376 EkoCLI :End of /MOTD command.
 :EkoCLI MODE EkoCLI :+i
+QUIT :bye
+:EkoCLI!~EkoCLI@redacted.comcastbusiness.net QUIT :Client Quit
+ERROR :Closing Link: redacted.comcastbusiness.net (Client Quit)
