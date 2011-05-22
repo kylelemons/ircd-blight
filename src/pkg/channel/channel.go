@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	// Always lock this before locking a channel mutex if both are to be locked.
+	// Always lock this after locking a channel mutex if both are to be locked.
 	chanMutex = new(sync.RWMutex)
 	chanMap   = make(map[string]*Channel)
 )
@@ -86,6 +86,13 @@ func (c *Channel) Join(uid string, hostmask string) (notify []string, err os.Err
 		notify = append(notify, id)
 	}
 
+	// Make sure that this channel exists (bad news if it doesn't)
+	chanMutex.Lock()
+	defer chanMutex.Unlock()
+	if _, exist := chanMap[c.name]; !exist {
+		chanMap[c.name] = c
+	}
+
 	return
 }
 
@@ -97,6 +104,7 @@ func (c *Channel) Join(uid string, hostmask string) (notify []string, err os.Err
 // Possible solutions:
 //  - Make JOIN and PART global (most thorough)
 //  - Check channel existence and recreate after unlock (easiest)
+// DONE.  Verify?
 
 // Part a user from the channel.
 func (c *Channel) Part(uid string) (notify []string, err os.Error) {
