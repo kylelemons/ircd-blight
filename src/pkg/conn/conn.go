@@ -26,6 +26,7 @@ func NewConn(nc net.Conn) *Conn {
 		onclose:     make(map[chan<- string]bool),
 		id:          user.NextUserID(),
 	}
+	log.Printf("[%s] ** Connected", c.id)
 	go c.readthread()
 	return c
 }
@@ -68,7 +69,6 @@ func (c *Conn) WriteMessage(message *parser.Message) {
 	bytes := message.Bytes()
 	bytes = append(bytes, '\r', '\n')
 	n, err := c.Write(bytes)
-	log.Printf("[%s] Wrote %d bytes", c.id, n)
 	if err != nil || n != len(bytes) {
 		c.Error = err
 		c.active = false
