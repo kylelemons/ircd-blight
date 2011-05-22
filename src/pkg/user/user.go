@@ -190,6 +190,19 @@ func Get(id string) *User {
 	return u
 }
 
+// Delete the user record.
+func Delete(id string) {
+	userMutex.Lock()
+	defer userMutex.Unlock()
+
+	// Database lookup?
+	if u, ok := userMap[id]; ok {
+		nick := u.Nick()
+		userNicks[nick] = "", false
+		userMap[id] = nil, false
+	}
+}
+
 func init() {
 	go genUserIDs()
 }

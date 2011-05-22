@@ -1,0 +1,20 @@
+:verne.freenode.net 001 EkoCLI :Welcome to the freenode Internet Relay Chat Network EkoCLI
+:verne.freenode.net 002 EkoCLI :Your host is verne.freenode.net[host/port], running version ircd-seven-1.0.3
+:verne.freenode.net 003 EkoCLI :This server was created Tue Feb 23 2010 at 18:01:42 EST
+:verne.freenode.net 004 EkoCLI verne.freenode.net ircd-seven-1.0.3 DOQRSZaghilopswz CFILMPQbcefgijklmnopqrstvz bkloveqjfI
+:verne.freenode.net 005 EkoCLI CHANTYPES=# EXCEPTS INVEX CHANMODES=eIbq,k,flj,CFLMPQcgimnprstz CHANLIMIT=#:120 PREFIX=(ov)@+ MAXLIST=bqeI:100 MODES=4 NETWORK=freenode KNOCK STATUSMSG=@+ CALLERID=g :are supported by this server
+:verne.freenode.net 005 EkoCLI SAFELIST ELIST=U CASEMAPPING=rfc1459 CHARSET=ascii NICKLEN=16 CHANNELLEN=50 TOPICLEN=390 ETRACE CPRIVMSG CNOTICE DEAF=D MONITOR=100 :are supported by this server
+:verne.freenode.net 005 EkoCLI FNC TARGMAX=NAMES:1,LIST:1,KICK:1,WHOIS:1,PRIVMSG:4,NOTICE:4,ACCEPT:,MONITOR: EXTBAN=$,arx WHOX CLIENTVER=3.0 :are supported by this server
+:verne.freenode.net 251 EkoCLI :There are 297 users and 57521 invisible on 30 servers
+:verne.freenode.net 252 EkoCLI 28 :IRC Operators online
+:verne.freenode.net 253 EkoCLI 9 :unknown connection(s)
+:verne.freenode.net 254 EkoCLI 39793 :channels formed
+:verne.freenode.net 255 EkoCLI :I have 3583 clients and 1 servers
+:verne.freenode.net 265 EkoCLI 3583 6428 :Current local users 3583, max 6428
+:verne.freenode.net 266 EkoCLI 57818 72930 :Current global users 57818, max 72930
+:verne.freenode.net 250 EkoCLI :Highest connection count: 6429 (6428 clients) (415000 connections received)
+:verne.freenode.net 375 EkoCLI :- verne.freenode.net Message of the Day -
+:verne.freenode.net 372 EkoCLI :- Welcome to verne.freenode.net in Newark, NJ, US.
+:verne.freenode.net 372 EkoCLI :- Thanks to Choopa 'www.choopa.com' for providing this server!
+:verne.freenode.net 376 EkoCLI :End of /MOTD command.
+:EkoCLI MODE EkoCLI :+i

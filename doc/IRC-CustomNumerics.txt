@@ -1,3 +1,6 @@
+250 RPL_ISUPPORT
+"<supported> :are supported by this server"
+
 999 RPL_CUSTOM
 "<param> <param> :Custom Numeric"
 

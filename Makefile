@@ -1,13 +1,13 @@
 # Explicitly make targets phony, just in case
-.PHONY : all pkgs cmds install clean nuke test bench gofmt
+.PHONY : all pkgs cmds install clean nuke test bench gofmt rfc
 
 MAKE += -s
 
 PKGS = parser user conn core server
-CMDS = ircd
+CMDS = ircd rfc2go
 
 # By default, build everything
-all : pkgs cmds
+all : rfc pkgs cmds
 	@
 
 define recurse
@@ -37,5 +37,15 @@ install clean nuke :
 test bench :
 	$(call all_packages,$@)
 
+# Format source files
 gofmt :
 	@gofmt -w `find . -name "*.go"`
+
+# Generate RFC
+rfc : src/pkg/parser/rfc2812.go
+
+src/pkg/parser/rfc2812.go : doc/IRC-RFC2812.txt doc/IRC-CustomNumerics.txt src/cmd/rfc2go/main.go
+	$(call recurse,cmd,rfc2go,all)
+	@echo "generate rfc"
+	@src/cmd/rfc2go/rfc2go -out $@ -pkg parser $(filter %.txt,$^)
+	@gofmt -w $@

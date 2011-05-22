@@ -33,6 +33,7 @@ func Start() {
 		// TODO(kevlar): Event dispatch channel?
 		case closed := <-closing:
 			log.Printf("[%s] ** Connection closed", closed)
+			user.Delete(closed)
 			connIDs[closed] = nil, false
 		case msg := <-incoming:
 			log.Printf("[%s] >> %s\n", msg.SenderID, msg)
@@ -43,7 +44,7 @@ func Start() {
 			setprefix := msg.Prefix == "*"
 			closeafter := msg.Command == parser.CMD_ERROR
 			if len(msg.Prefix) == 0 && !closeafter {
-				msg.Prefix = "server.name"
+				msg.Prefix = Config.Name
 			}
 			for _, id := range msg.DestIDs {
 				conn, ok := connIDs[id]
@@ -65,6 +66,7 @@ func Start() {
 				sentcount++
 				if closeafter {
 					log.Printf("[%s] ** Connection terminated", id)
+					user.Delete(id)
 					connIDs[id] = nil, false
 					conn.UnsubscribeClose(closing)
 					conn.Close()
