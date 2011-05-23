@@ -33,6 +33,37 @@ func ToUpper(str string) string {
 	},str)
 }
 
+func ValidServerName(str string) bool {
+	if len(str) == 0 {
+		return false
+	}
+	dot := 0
+	for _, rune := range str {
+		if !isletter(rune) && !isdigit(rune) && !isspecial(rune) && rune != '-' && rune != '.' {
+			return false
+		}
+		if rune == '.' {
+			dot++
+		}
+	}
+	return dot > 0
+}
+
+func ValidServerPrefix(pfx string) bool {
+	if len(pfx) != 3 {
+		return false
+	}
+	if !isdigit(int(pfx[0])) {
+		return false
+	}
+	for _, rune := range pfx {
+		if !isletter(rune) && !isdigit(rune) {
+			return false
+		}
+	}
+	return true
+}
+
 func ValidNick(str string) bool {
 	if len(str) == 0 {
 		return false

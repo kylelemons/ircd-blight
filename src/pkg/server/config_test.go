@@ -7,6 +7,7 @@ import (
 
 var testDefaultConfig = &Configuration{
 	Name:  "blight.local",
+	SID:   "8LI",
 	Admin: "Foo Bar [foo@bar.com]",
 	Network: &Network{
 		Name:        "IRCD-Blight",

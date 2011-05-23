@@ -5,6 +5,7 @@ GOFILES=\
 	run.go\
 	core.go\
 	hooks.go\
+	ircd.go\
 
 include $(GOROOT)/src/Make.pkg
 

@@ -15,7 +15,7 @@ var (
 	}
 )
 
-func Privmsg(hook string, msg *parser.Message, out chan<- *parser.Message) {
+func Privmsg(hook string, msg *parser.Message, ircd *core.IRCd) {
 	quiet := hook == parser.CMD_NOTICE
 	recipients, text := strings.Split(msg.Args[0], ",", -1), msg.Args[1]
 	destIDs := make([]string, 0, len(recipients))
@@ -24,7 +24,7 @@ func Privmsg(hook string, msg *parser.Message, out chan<- *parser.Message) {
 			channel, err := channel.Get(name, false)
 			if num, ok := err.(*parser.Numeric); ok {
 				if !quiet {
-					out <- num.Message(msg.SenderID)
+					ircd.ToClient <- num.Message(msg.SenderID)
 				}
 				continue
 			}
@@ -35,7 +35,7 @@ func Privmsg(hook string, msg *parser.Message, out chan<- *parser.Message) {
 					userids = userids[:len(userids)-1]
 				}
 			}
-			out <- &parser.Message{
+			ircd.ToClient <- &parser.Message{
 				Prefix:  msg.SenderID,
 				Command: hook,
 				Args: []string{
@@ -50,14 +50,14 @@ func Privmsg(hook string, msg *parser.Message, out chan<- *parser.Message) {
 		id, err := user.GetID(name)
 		if num, ok := err.(*parser.Numeric); ok {
 			if !quiet {
-				out <- num.Message(msg.SenderID)
+				ircd.ToClient <- num.Message(msg.SenderID)
 			}
 			continue
 		}
 		destIDs = append(destIDs, id)
 	}
 	if len(destIDs) > 0 {
-		out <- &parser.Message{
+		ircd.ToClient <- &parser.Message{
 			Prefix:  msg.SenderID,
 			Command: hook,
 			Args: []string{

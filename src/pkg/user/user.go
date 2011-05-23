@@ -89,14 +89,14 @@ func (u *User) Type() userType {
 	return u.utyp
 }
 
-// Atomically get all of the user's information
+// Atomically get all of the user's information.
 func (u *User) Info() (nick, user, name string, regType userType) {
 	u.mutex.RLock()
 	defer u.mutex.RUnlock()
 	return u.nick, u.user, u.name, u.utyp
 }
 
-// Set the user's nick
+// Set the user's nick.
 func (u *User) SetNick(nick string) os.Error {
 	if !parser.ValidNick(nick) {
 		return parser.NewNumeric(parser.ERR_ERRONEUSNICKNAME, nick)
@@ -125,6 +125,7 @@ func (u *User) SetNick(nick string) os.Error {
 	return nil
 }
 
+// Set the user and gecos (immutable once set).
 func (u *User) SetUser(user, name string) os.Error {
 	if len(u.user) > 0 {
 		return parser.NewNumeric(parser.ERR_ALREADYREGISTRED)
@@ -142,7 +143,7 @@ func (u *User) SetUser(user, name string) os.Error {
 	return nil
 }
 
-// Set the user's type
+// Set the user's type (immutable once set).
 func (u *User) SetType(newType userType) os.Error {
 	if u.utyp != Unregistered {
 		return parser.NewNumeric(parser.ERR_ALREADYREGISTRED)
@@ -170,12 +171,16 @@ func GetInfo(id string) (nick, user, name string, regType userType, ok bool) {
 	return
 }
 
-// Get the ID for a particular nic
+// Get the ID for a particular nick.
 func GetID(nick string) (id string, err os.Error) {
 	userMutex.RLock()
 	defer userMutex.RUnlock()
 
 	lownick := parser.ToLower(nick)
+
+	if _, ok := userMap[nick]; ok {
+		return nick, nil
+	}
 
 	var ok bool
 	if id, ok = userNicks[lownick]; !ok {

@@ -47,7 +47,7 @@ type Hook struct {
 	When        ExecutionMask
 	Constraints CallConstraints
 	Calls       int
-	Func        func(hook string, message *parser.Message, out chan<- *parser.Message)
+	Func        func(hook string, message *parser.Message, ircd *IRCd)
 }
 
 var (
@@ -55,7 +55,7 @@ var (
 )
 
 func Register(hook string, when ExecutionMask, args CallConstraints,
-fn func(string, *parser.Message, chan<- *parser.Message)) *Hook {
+fn func(string, *parser.Message, *IRCd)) *Hook {
 	if _, ok := registeredHooks[hook]; !ok {
 		registeredHooks[hook] = make([]*Hook, 0, 1)
 	}
@@ -69,7 +69,7 @@ fn func(string, *parser.Message, chan<- *parser.Message)) *Hook {
 }
 
 // TODO(kevlar): Add channel to send messages back on
-func DispatchMessage(message *parser.Message, out chan<- *parser.Message) {
+func DispatchMessage(message *parser.Message, ircd *IRCd) {
 	hookName := message.Command
 	_, _, _, reg, ok := user.GetInfo(message.SenderID)
 	if !ok {
@@ -87,7 +87,7 @@ func DispatchMessage(message *parser.Message, out chan<- *parser.Message) {
 	for _, hook := range registeredHooks[hookName] {
 		if hook.When&mask == mask {
 			// TODO(kevlar): Check callconstraints
-			go hook.Func(hookName, message, out)
+			go hook.Func(hookName, message, ircd)
 			hook.Calls++
 		}
 	}

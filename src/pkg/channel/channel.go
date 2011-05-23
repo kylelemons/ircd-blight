@@ -4,7 +4,6 @@ import (
 	"os"
 	"sync"
 	"kevlar/ircd/parser"
-	"log"
 )
 
 var (
@@ -79,7 +78,6 @@ func (c *Channel) Join(uid string, hostmask string) (notify []string, err os.Err
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	log.Printf("Joining %s to %s (%v)", uid, c.name, c.users)
 	if _, on := c.users[uid]; on {
 		return nil, parser.NewNumeric(parser.ERR_USERONCHANNEL, uid, c.name)
 	}

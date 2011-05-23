@@ -19,7 +19,7 @@ var (
 )
 
 // Handle the NICK, USER, SERVER, and PASS messages
-func Registration(hook string, msg *parser.Message, out chan<- *parser.Message) {
+func Registration(hook string, msg *parser.Message, ircd *core.IRCd) {
 	u := user.Get(msg.SenderID)
 
 	var err os.Error
@@ -38,7 +38,7 @@ func Registration(hook string, msg *parser.Message, out chan<- *parser.Message) 
 	if num, ok := err.(*parser.Numeric); ok {
 		msg := num.Message()
 		msg.DestIDs = append(msg.DestIDs, u.ID())
-		out <- msg
+		ircd.ToClient <- msg
 		return
 	}
 
@@ -53,15 +53,15 @@ func Registration(hook string, msg *parser.Message, out chan<- *parser.Message) 
 	destIDs := []string{u.ID()}
 	// RPL_WELCOME
 	msg = parser.NewNumeric(parser.RPL_WELCOME).Message()
-	msg.Args[1] = "Welcome to IRC!"
+	msg.Args[1] = "Welcome to the " + Config.Network.Name + " network, " + u.Nick() + "!"
 	msg.DestIDs = destIDs
-	out <- msg
+	ircd.ToClient <- msg
 
 	// RPL_YOURHOST
 	msg = parser.NewNumeric(parser.RPL_YOURHOST).Message()
-	msg.Args[1] = "Your host is some.server, running IRCD-Blight"
+	msg.Args[1] = "Your host is " + Config.Name + ", running IRCD-Blight" // TODO(kevlar): Version
 	msg.DestIDs = destIDs
-	out <- msg
+	ircd.ToClient <- msg
 
 	// RPL_CREATED
 	// RPL_MYINFO
@@ -79,7 +79,7 @@ func Registration(hook string, msg *parser.Message, out chan<- *parser.Message) 
 	// RPL_NOMOTD
 	msg = parser.NewNumeric(parser.ERR_NOMOTD).Message()
 	msg.DestIDs = destIDs
-	out <- msg
+	ircd.ToClient <- msg
 
 	msg = &parser.Message{
 		Command: parser.CMD_MODE,
@@ -90,10 +90,10 @@ func Registration(hook string, msg *parser.Message, out chan<- *parser.Message) 
 		},
 		DestIDs: destIDs,
 	}
-	out <- msg
+	ircd.ToClient <- msg
 }
 
-func Quit(hook string, msg *parser.Message, out chan<- *parser.Message) {
+func Quit(hook string, msg *parser.Message, ircd *core.IRCd) {
 	reason := "Client Quit"
 	if len(msg.Args) > 0 {
 		reason = msg.Args[0]
@@ -107,5 +107,5 @@ func Quit(hook string, msg *parser.Message, out chan<- *parser.Message) {
 			msg.SenderID,
 		},
 	}
-	out <- error
+	ircd.ToClient <- error
 }

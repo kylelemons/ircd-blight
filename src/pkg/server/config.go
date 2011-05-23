@@ -99,9 +99,9 @@ type Network struct {
 // A Configuration stores the configuration information for this server.
 type Configuration struct {
 	Name     string "attr"
+	SID      string "attr"
 	Admin    string
 	Network  *Network
-	Prefix   string
 	Ports    []*Ports
 	Class    []*Class
 	Operator []*Oper
@@ -110,7 +110,7 @@ type Configuration struct {
 // A suitable default XML configuration file on which an admin should
 // base his config.xml.
 var DefaultXML = `
-<server name="blight.local">
+<server name="blight.local" sid="8LI">
 	<ports>6666-6669</ports>
 	<ports ssl="true">6696-6699,9999</ports>
 	<network name="IRCD-Blight">

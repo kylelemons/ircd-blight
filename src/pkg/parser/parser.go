@@ -22,6 +22,17 @@ func NewMessage(pfx, cmd string, args []string) *Message {
 	return m
 }
 
+// Duplicate a message.  This is a deep copy.
+func (m *Message) Dup() *Message {
+	n := new(Message)
+	n.Prefix, n.Command, n.SenderID = m.Prefix, m.Command, m.SenderID
+	n.Args = make([]string, len(m.Args))
+	copy(n.Args, m.Args)
+	n.DestIDs = make([]string, len(m.DestIDs))
+	copy(n.DestIDs, m.DestIDs)
+	return n
+}
+
 func ParseMessage(line []byte) *Message {
 	line = bytes.TrimSpace(line)
 	if len(line) <= 0 {
