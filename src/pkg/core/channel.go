@@ -1,18 +1,17 @@
-package server
+package core
 
 import (
 	"kevlar/ircd/parser"
-	"kevlar/ircd/core"
 	"kevlar/ircd/channel"
 	"kevlar/ircd/user"
 	"strings"
 )
 
 var (
-	joinhook = core.Register(parser.CMD_JOIN, core.User, core.OptArgs(1, 1), Join)
+	joinhook = Register(parser.CMD_JOIN, User, OptArgs(1, 1), Join)
 )
 
-func Join(hook string, msg *parser.Message, ircd *core.IRCd) {
+func Join(hook string, msg *parser.Message, ircd *IRCd) {
 	nickname, username, _, _, _ := user.GetInfo(msg.SenderID)
 
 	for _, channame := range strings.Split(msg.Args[0], ",", -1) {

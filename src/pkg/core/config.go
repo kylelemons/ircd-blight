@@ -1,4 +1,4 @@
-package server
+package core
 
 import (
 	"bytes"
@@ -109,8 +109,8 @@ type Configuration struct {
 
 // A suitable default XML configuration file on which an admin should
 // base his config.xml.
-var DefaultXML = `
-<server name="blight.local" sid="8LI">
+var DefaultXML = `` +
+	`<server name="blight.local" sid="8LI">
 	<ports>6666-6669</ports>
 	<ports ssl="true">6696-6699,9999</ports>
 	<network name="IRCD-Blight">

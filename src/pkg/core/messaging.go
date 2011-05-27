@@ -1,21 +1,20 @@
-package server
+package core
 
 import (
 	"kevlar/ircd/parser"
-	"kevlar/ircd/core"
 	"kevlar/ircd/channel"
 	"kevlar/ircd/user"
 	"strings"
 )
 
 var (
-	msghooks = []*core.Hook{
-		core.Register(parser.CMD_PRIVMSG, core.User, core.NArgs(2), Privmsg),
-		core.Register(parser.CMD_NOTICE, core.User, core.NArgs(2), Privmsg),
+	msghooks = []*Hook{
+		Register(parser.CMD_PRIVMSG, User, NArgs(2), Privmsg),
+		Register(parser.CMD_NOTICE, User, NArgs(2), Privmsg),
 	}
 )
 
-func Privmsg(hook string, msg *parser.Message, ircd *core.IRCd) {
+func Privmsg(hook string, msg *parser.Message, ircd *IRCd) {
 	quiet := hook == parser.CMD_NOTICE
 	recipients, text := strings.Split(msg.Args[0], ",", -1), msg.Args[1]
 	destIDs := make([]string, 0, len(recipients))

@@ -1,9 +1,10 @@
 package channel
 
 import (
+	"kevlar/ircd/parser"
 	"os"
 	"sync"
-	"kevlar/ircd/parser"
+	"time"
 )
 
 var (
@@ -17,6 +18,7 @@ var (
 type Channel struct {
 	mutex *sync.RWMutex
 	name  string
+	ts    int64
 	users map[string]string // users[uid] = hostmask
 }
 
@@ -84,6 +86,7 @@ func (c *Channel) Join(uid string, hostmask string) (notify []string, err os.Err
 
 	// TODO(kevlar): Check hostmask
 	c.users[uid] = hostmask
+	c.ts = time.Nanoseconds()
 
 	notify = make([]string, 0, len(c.users))
 	for id := range c.users {
@@ -124,6 +127,7 @@ func (c *Channel) Part(uid string) (notify []string, err os.Error) {
 		notify = append(notify, id)
 	}
 	c.users[uid] = "", false
+	c.ts = time.Nanoseconds()
 
 	if len(c.users) == 0 {
 		chanMutex.Lock()

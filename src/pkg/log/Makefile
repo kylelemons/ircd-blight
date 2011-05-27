@@ -1,7 +1,7 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=kevlar/ircd/server
+TARG=kevlar/ircd/log
 GOFILES=\
-	server.go\
+	log.go\
 
 include $(GOROOT)/src/Make.pkg

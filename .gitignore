@@ -22,5 +22,6 @@ _testmain.go
 *.sw[op]
 *.orig
 
-syntax: glob
 src/cmd/ircd/ircd
+ircd.conf
+ircd.log

@@ -21,7 +21,7 @@ func ToLower(str string) string {
 			return rune - 'A' + 'a'
 		}
 		return rune
-	},str)
+	}, str)
 }
 
 func ToUpper(str string) string {
@@ -30,7 +30,7 @@ func ToUpper(str string) string {
 			return rune - 'a' + 'A'
 		}
 		return rune
-	},str)
+	}, str)
 }
 
 func ValidServerName(str string) bool {
@@ -113,5 +113,5 @@ func StripUnsafe(str string) string {
 			return rune
 		}
 		return -1
-	},str)
+	}, str)
 }

@@ -1,10 +1,10 @@
 package conn
 
 import (
+	"bufio"
 	"os"
 	"log"
 	"net"
-	"encoding/line"
 	"kevlar/ircd/parser"
 	"kevlar/ircd/user"
 )
@@ -47,7 +47,7 @@ func (c *Conn) readthread() {
 	defer c.Close()
 
 	// Read lines by \r\n or \n
-	linereader := line.NewReader(c, 512)
+	linereader := bufio.NewReader(c)
 	for c.active {
 		line, _, err := linereader.ReadLine()
 		if err != nil {
@@ -94,4 +94,11 @@ func (c *Conn) Unsubscribe(chn chan *parser.Message) {
 
 func (c *Conn) UnsubscribeClose(chn chan<- string) {
 	c.onclose[chn] = false, false
+}
+
+func (c *Conn) SetServer(id string) {
+	if len(c.id) != 9 {
+		panic("SetServer on invalid connection")
+	}
+	c.id = id
 }

@@ -3,7 +3,7 @@
 
 MAKE += -s
 
-PKGS = parser user channel conn core server
+PKGS = log parser user server conn channel core
 CMDS = ircd rfc2go
 
 # By default, build everything

@@ -4,6 +4,7 @@ const (
 	CMD_NICK   = "NICK"
 	CMD_USER   = "USER"
 	CMD_SERVER = "SERVER"
+	CMD_CAPAB  = "CAPAB"
 	CMD_PASS   = "PASS"
 	CMD_ERROR  = "ERROR"
 	CMD_QUIT   = "QUIT"

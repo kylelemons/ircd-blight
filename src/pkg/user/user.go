@@ -1,9 +1,11 @@
 package user
 
 import (
-	"os"
-	"sync"
 	"kevlar/ircd/parser"
+	"os"
+	"strings"
+	"sync"
+	"time"
 )
 
 var (
@@ -52,18 +54,28 @@ func genUserIDs() {
 // Store the user information and keep it synchronized across possible
 // multiple accesses.
 type User struct {
-	mutex *sync.RWMutex
-	id    string
-	user  string
-	nick  string
-	name  string
-	utyp  userType
+	mutex  *sync.RWMutex
+	ts     int64
+	id     string
+	user   string
+	pass   string
+	nick   string
+	name   string
+	sver   int
+	spfx   string
+	capab  []string
+	server string
+	hops   int
+	utyp   userType
 }
 
 // Get the user ID.
 func (u *User) ID() string {
 	u.mutex.RLock()
 	defer u.mutex.RUnlock()
+	if u.utyp == RegisteredAsServer {
+		return u.spfx
+	}
 	return u.id
 }
 
@@ -96,6 +108,13 @@ func (u *User) Info() (nick, user, name string, regType userType) {
 	return u.nick, u.user, u.name, u.utyp
 }
 
+// Atomically get all of the server's information.
+func (u *User) ServerInfo() (sid, server, pass string, capab []string) {
+	u.mutex.RLock()
+	defer u.mutex.RUnlock()
+	return u.spfx, u.server, u.pass, u.capab
+}
+
 // Set the user's nick.
 func (u *User) SetNick(nick string) os.Error {
 	if !parser.ValidNick(nick) {
@@ -122,6 +141,7 @@ func (u *User) SetNick(nick string) os.Error {
 	defer u.mutex.Unlock()
 
 	u.nick = nick
+	u.ts = time.Nanoseconds()
 	return nil
 }
 
@@ -140,6 +160,65 @@ func (u *User) SetUser(user, name string) os.Error {
 	defer u.mutex.Unlock()
 
 	u.user, u.name = user, name
+	u.ts = time.Nanoseconds()
+	return nil
+}
+
+func (u *User) SetPassServer(password, ts, prefix string) os.Error {
+	if len(u.user) > 0 {
+		return parser.NewNumeric(parser.ERR_ALREADYREGISTRED)
+	}
+
+	if len(password) == 0 {
+		return os.NewError("Zero-length password")
+	}
+
+	if ts != "6" {
+		return os.NewError("TS " + ts + " is unsupported")
+	}
+
+	if !parser.ValidServerPrefix(prefix) {
+		return os.NewError("SID " + prefix + " is invalid")
+	}
+
+	u.pass, u.sver, u.spfx = password, 6, prefix
+	u.ts = time.Nanoseconds()
+	return nil
+}
+
+func (u *User) SetCapab(capab string) os.Error {
+	if len(u.user) > 0 {
+		return parser.NewNumeric(parser.ERR_ALREADYREGISTRED)
+	}
+
+	if !strings.Contains(capab, "QS") {
+		return os.NewError("QS CAPAB missing")
+	}
+
+	if !strings.Contains(capab, "ENCAP") {
+		return os.NewError("ENCAP CAPAB missing")
+	}
+
+	u.capab = strings.Fields(capab)
+	u.ts = time.Nanoseconds()
+	return nil
+}
+
+func (u *User) SetServer(serv, hops string) os.Error {
+	if len(u.user) > 0 {
+		return parser.NewNumeric(parser.ERR_ALREADYREGISTRED)
+	}
+
+	if len(serv) == 0 {
+		return os.NewError("Zero-length server name")
+	}
+
+	if hops != "1" {
+		return os.NewError("Hops = " + hops + " is unsupported")
+	}
+
+	u.server, u.hops = serv, 1
+	u.ts = time.Nanoseconds()
 	return nil
 }
 
@@ -149,6 +228,7 @@ func (u *User) SetType(newType userType) os.Error {
 		return parser.NewNumeric(parser.ERR_ALREADYREGISTRED)
 	}
 	u.utyp = newType
+	u.ts = time.Nanoseconds()
 	return nil
 }
 
