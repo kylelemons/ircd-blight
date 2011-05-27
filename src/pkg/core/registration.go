@@ -1,10 +1,12 @@
 package core
 
 import (
-	"os"
-	"kevlar/ircd/parser"
-	"kevlar/ircd/user"
+	"kevlar/ircd/channel"
 	"kevlar/ircd/log"
+	"kevlar/ircd/parser"
+	"kevlar/ircd/server"
+	"kevlar/ircd/user"
+	"os"
 )
 
 var (
@@ -20,62 +22,101 @@ var (
 
 // Handle the NICK, USER, SERVER, and PASS messages
 func ConnReg(hook string, msg *parser.Message, ircd *IRCd) {
-	u := user.Get(msg.SenderID)
-
 	var err os.Error
+	var u *user.User
+	var s *server.Server
+
+	switch len(msg.SenderID) {
+	case 3:
+		s = server.Get(msg.SenderID)
+	case 9:
+		u = user.Get(msg.SenderID)
+	}
 
 	switch msg.Command {
 	case parser.CMD_NICK:
 		// NICK <nick>
-		nick := msg.Args[0]
-		err = u.SetNick(nick)
+		if u != nil {
+			nick := msg.Args[0]
+			err = u.SetNick(nick)
+		}
 	case parser.CMD_USER:
 		// USER <user> . . :<real name>
-		username, realname := msg.Args[0], msg.Args[3]
-		err = u.SetUser(username, realname)
-	case parser.CMD_PASS:
-		if len(msg.Args) != 4 {
-			return
+		if u != nil {
+			username, realname := msg.Args[0], msg.Args[3]
+			err = u.SetUser(username, realname)
 		}
-		// PASS <password> TS <ver> <pfx>
-		err = u.SetPassServer(msg.Args[0], msg.Args[2], msg.Args[3])
+	case parser.CMD_PASS:
+		if s != nil {
+			if len(msg.Args) != 4 {
+				return
+			}
+			// PASS <password> TS <ver> <pfx>
+			err = s.SetPass(msg.Args[0], msg.Args[2], msg.Args[3])
+		}
 	case parser.CMD_CAPAB:
-		err = u.SetCapab(msg.Args[0])
+		if s != nil {
+			err = s.SetCapab(msg.Args[0])
+		}
 	case parser.CMD_SERVER:
-		err = u.SetServer(msg.Args[0], msg.Args[1])
+		if s != nil {
+			err = s.SetServer(msg.Args[0], msg.Args[1])
+		}
 	default:
 		log.Warn.Printf("Unknown command %q", msg)
 	}
 
-	if err != nil {
-		switch err := err.(type) {
-		case *parser.Numeric:
-			msg := err.Message()
-			msg.DestIDs = append(msg.DestIDs, u.ID())
-			ircd.ToClient <- msg
-			return
-		default:
-			msg := &parser.Message{
-				Command: parser.CMD_ERROR,
-				Args:    []string{err.String()},
-				DestIDs: []string{u.ID()},
+	if u != nil {
+		if err != nil {
+			switch err := err.(type) {
+			case *parser.Numeric:
+				msg := err.Message()
+				msg.DestIDs = append(msg.DestIDs, u.ID())
+				ircd.ToClient <- msg
+				return
+			default:
+				msg := &parser.Message{
+					Command: parser.CMD_ERROR,
+					Args:    []string{err.String()},
+					DestIDs: []string{u.ID()},
+				}
+				ircd.ToClient <- msg
+				return
 			}
-			ircd.ToClient <- msg
+		}
+
+		nickname, username, _, _ := u.Info()
+		if nickname != "*" && username != "" {
+			sendSignon(u, ircd)
 			return
 		}
 	}
 
-	nickname, username, _, _ := u.Info()
-	if nickname != "*" && username != "" {
-		sendSignon(u, ircd)
-		return
-	}
+	if s != nil {
+		if err != nil {
+			switch err := err.(type) {
+			case *parser.Numeric:
+				msg := err.Message()
+				msg.DestIDs = append(msg.DestIDs, s.ID())
+				ircd.ToServer <- msg
+				return
+			default:
+				msg := &parser.Message{
+					Command: parser.CMD_ERROR,
+					Args:    []string{err.String()},
+					DestIDs: []string{s.ID()},
+				}
+				ircd.ToServer <- msg
+				return
+			}
+		}
 
-	sid, serv, pass, capab := u.ServerInfo()
-	if sid != "" && serv != "" && pass != "" && len(capab) > 0 {
-		sendServerSignon(u, ircd)
+		sid, serv, pass, capab := s.Info()
+		if sid != "" && serv != "" && pass != "" && len(capab) > 0 {
+			sendServerSignon(s, ircd)
+			Burst(s, ircd)
+		}
 	}
-
 }
 
 func sendSignon(u *user.User, ircd *IRCd) {
@@ -125,11 +166,11 @@ func sendSignon(u *user.User, ircd *IRCd) {
 	ircd.ToClient <- msg
 }
 
-func sendServerSignon(u *user.User, ircd *IRCd) {
-	log.Info.Printf("[%s] ** Registered As Server\n", u.ID())
-	u.SetType(user.RegisteredAsServer)
+func sendServerSignon(s *server.Server, ircd *IRCd) {
+	log.Info.Printf("[%s] ** Registered As Server\n", s.ID())
+	s.SetType(server.RegisteredAsServer)
 
-	destIDs := []string{u.ID()}
+	destIDs := []string{s.ID()}
 
 	var msg *parser.Message
 
@@ -143,7 +184,7 @@ func sendServerSignon(u *user.User, ircd *IRCd) {
 		},
 		DestIDs: destIDs,
 	}
-	ircd.ToClient <- msg
+	ircd.ToServer <- msg
 
 	msg = &parser.Message{
 		Command: parser.CMD_CAPAB,
@@ -152,7 +193,7 @@ func sendServerSignon(u *user.User, ircd *IRCd) {
 		},
 		DestIDs: destIDs,
 	}
-	ircd.ToClient <- msg
+	ircd.ToServer <- msg
 
 	msg = &parser.Message{
 		Command: parser.CMD_SERVER,
@@ -163,7 +204,67 @@ func sendServerSignon(u *user.User, ircd *IRCd) {
 		},
 		DestIDs: destIDs,
 	}
-	ircd.ToClient <- msg
+	ircd.ToServer <- msg
+}
+
+func Burst(serv *server.Server, ircd *IRCd) {
+	destIDs := []string{serv.ID()}
+	sid := Config.SID
+	var msg *parser.Message
+
+	// SID/SERVER
+	// UID/EUID
+	for uid := range user.Iter() {
+		u := user.Get(uid)
+		nick, username, name, typ := u.Info()
+		if typ != user.RegisteredAsUser {
+			continue
+		}
+		msg = &parser.Message{
+			Prefix:  sid,
+			Command: parser.CMD_UID,
+			Args: []string{
+				nick,
+				// hopcount
+				"1",
+				u.TS(),
+				// umodes
+				"+i",
+				username,
+				// visible hostname
+				"some.host",
+				// IP addr
+				"127.0.0.1",
+				uid,
+				name,
+			},
+			DestIDs: destIDs,
+		}
+		ircd.ToServer <- msg
+	}
+	// Optional: ENCAP REALHOST, ENCAP LOGIN, AWAY
+	// SJOIN
+	for channame := range channel.Iter() {
+		chanobj, _ := channel.Get(channame, false)
+		msg = &parser.Message{
+			Prefix:  sid,
+			Command: parser.CMD_SJOIN,
+			Args: []string{
+				chanobj.TS(),
+				channame,
+				// modes, params...
+				"+nt",
+			},
+			DestIDs: destIDs,
+		}
+		for _, uid := range chanobj.UserIDs() {
+			upfx := ""
+			msg.Args = append(msg.Args, upfx+uid)
+		}
+		ircd.ToServer <- msg
+	}
+	// Optional: BMAST
+	// Optional: TB
 }
 
 func Quit(hook string, msg *parser.Message, ircd *IRCd) {

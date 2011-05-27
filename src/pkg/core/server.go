@@ -2,9 +2,10 @@ package core
 
 import (
 	"kevlar/ircd/conn"
-	"kevlar/ircd/parser"
-	"kevlar/ircd/user"
 	"kevlar/ircd/log"
+	"kevlar/ircd/parser"
+	"kevlar/ircd/server"
+	"kevlar/ircd/user"
 	"sync"
 )
 
@@ -56,7 +57,7 @@ func (s *IRCd) manageServers() {
 		// Messages directly from connections
 		case msg = <-s.fromServer:
 			log.Debug.Printf("{%s} >> %s\n", msg.SenderID, msg)
-			DispatchMessage(msg, s)
+			DispatchServer(msg, s)
 
 		// Messages from hooks
 		case msg, open = <-s.ToServer:
@@ -72,7 +73,7 @@ func (s *IRCd) manageServers() {
 		case conn := <-s.newServer:
 			sid := conn.ID()
 			sid2conn[sid] = conn
-			user.Get(sid)
+			server.Get(sid)
 			log.Debug.Printf("{%s} ** Registered connection", sid)
 			conn.Subscribe(s.fromServer)
 			conn.SubscribeClose(s.serverClosing)
@@ -116,26 +117,7 @@ func (s *IRCd) manageClients() {
 			}
 
 			log.Debug.Printf("[%s] >> %s", uid, msg)
-			DispatchMessage(msg, s)
-
-			if len(uid) == 3 {
-				continue
-			}
-
-			if _, _, _, utyp, _ := user.GetInfo(uid); utyp != user.RegisteredAsServer {
-				continue
-			}
-
-			conn := uid2conn[uid]
-
-			conn.Unsubscribe(s.fromClient)
-
-			sid := u.ID()
-			conn.SetServer(sid)
-
-			s.newServer <- uid2conn[uid]
-			uid2conn[uid] = nil, false
-			uid2conn[sid] = conn
+			DispatchClient(msg, s)
 
 		// Messages from hooks
 		case msg, open = <-s.ToClient:
@@ -243,7 +225,6 @@ func (s *IRCd) manageClients() {
 			log.Debug.Printf("[%s] ** Connection closed", closeid)
 			user.Delete(closeid)
 			uid2conn[closeid] = nil, false
-
 		}
 	}
 }
@@ -271,7 +252,7 @@ func (s *IRCd) manageIncoming() {
 		for !quit {
 			select {
 			case msg := <-inc:
-				log.Debug.Printf("<%s> %s", msg.SenderID, msg)
+				log.Debug.Printf(" %s  %s", msg.SenderID, msg)
 				queued = append(queued, msg)
 				switch msg.Command {
 				case parser.CMD_PASS:

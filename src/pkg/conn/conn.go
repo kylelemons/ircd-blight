@@ -16,6 +16,7 @@ type Conn struct {
 	onclose     map[chan<- string]bool
 	Error       os.Error
 	id          string
+	reading     bool
 }
 
 func NewConn(nc net.Conn) *Conn {
@@ -27,7 +28,6 @@ func NewConn(nc net.Conn) *Conn {
 		id:          user.NextUserID(),
 	}
 	log.Printf("[%s] ** Connected", c.id)
-	go c.readthread()
 	return c
 }
 
@@ -82,6 +82,11 @@ func (c *Conn) Active() bool {
 
 func (c *Conn) Subscribe(chn chan<- *parser.Message) {
 	c.subscribers[chn] = true
+
+	if !c.reading {
+		go c.readthread()
+		c.reading = true
+	}
 }
 
 func (c *Conn) SubscribeClose(chn chan<- string) {

@@ -3,6 +3,7 @@ package channel
 import (
 	"kevlar/ircd/parser"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -54,6 +55,13 @@ func Get(name string, create bool) (*Channel, os.Error) {
 // Get the channel name (immutable).
 func (c *Channel) Name() string {
 	return c.name
+}
+
+// Get the channel TS (comes as a string)
+func (c *Channel) TS() string {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	return strconv.Itoa64(c.ts / 1e9)
 }
 
 // Get the chanel member IDs
@@ -137,4 +145,23 @@ func (c *Channel) Part(uid string) (notify []string, err os.Error) {
 	}
 
 	return
+}
+
+func Iter() <-chan string {
+	chanMutex.RLock()
+	defer chanMutex.RUnlock()
+
+	out := make(chan string)
+	ids := make([]string, 0, len(chanMap))
+	for _, c := range chanMap {
+		ids = append(ids, c.name)
+	}
+
+	go func() {
+		defer close(out)
+		for _, channel := range ids {
+			out <- channel
+		}
+	}()
+	return out
 }

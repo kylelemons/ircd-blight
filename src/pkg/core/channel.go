@@ -4,6 +4,7 @@ import (
 	"kevlar/ircd/parser"
 	"kevlar/ircd/channel"
 	"kevlar/ircd/user"
+	"kevlar/ircd/server"
 	"strings"
 )
 
@@ -25,6 +26,19 @@ func Join(hook string, msg *parser.Message, ircd *IRCd) {
 		if num, ok := err.(*parser.Numeric); ok {
 			ircd.ToClient <- num.Message(msg.SenderID)
 			continue
+		}
+
+		for sid := range server.Iter() {
+			ircd.ToServer <- &parser.Message{
+				Prefix:  msg.SenderID,
+				Command: parser.CMD_JOIN,
+				Args: []string{
+					channel.TS(),
+					channel.Name(),
+					"+",
+				},
+				DestIDs: []string{sid},
+			}
 		}
 
 		ircd.ToClient <- &parser.Message{

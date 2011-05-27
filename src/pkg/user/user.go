@@ -3,7 +3,7 @@ package user
 import (
 	"kevlar/ircd/parser"
 	"os"
-	"strings"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -29,7 +29,6 @@ type userType int
 const (
 	Unregistered userType = iota
 	RegisteredAsUser
-	RegisteredAsServer
 )
 
 func genUserIDs() {
@@ -54,28 +53,20 @@ func genUserIDs() {
 // Store the user information and keep it synchronized across possible
 // multiple accesses.
 type User struct {
-	mutex  *sync.RWMutex
-	ts     int64
-	id     string
-	user   string
-	pass   string
-	nick   string
-	name   string
-	sver   int
-	spfx   string
-	capab  []string
-	server string
-	hops   int
-	utyp   userType
+	mutex *sync.RWMutex
+	ts    int64
+	id    string
+	user  string
+	pass  string
+	nick  string
+	name  string
+	utyp  userType
 }
 
 // Get the user ID.
 func (u *User) ID() string {
 	u.mutex.RLock()
 	defer u.mutex.RUnlock()
-	if u.utyp == RegisteredAsServer {
-		return u.spfx
-	}
 	return u.id
 }
 
@@ -101,18 +92,18 @@ func (u *User) Type() userType {
 	return u.utyp
 }
 
+// Get the channel TS (comes as a string)
+func (u *User) TS() string {
+	u.mutex.RLock()
+	defer u.mutex.RUnlock()
+	return strconv.Itoa64(u.ts / 1e9)
+}
+
 // Atomically get all of the user's information.
 func (u *User) Info() (nick, user, name string, regType userType) {
 	u.mutex.RLock()
 	defer u.mutex.RUnlock()
 	return u.nick, u.user, u.name, u.utyp
-}
-
-// Atomically get all of the server's information.
-func (u *User) ServerInfo() (sid, server, pass string, capab []string) {
-	u.mutex.RLock()
-	defer u.mutex.RUnlock()
-	return u.spfx, u.server, u.pass, u.capab
 }
 
 // Set the user's nick.
@@ -164,63 +155,6 @@ func (u *User) SetUser(user, name string) os.Error {
 	return nil
 }
 
-func (u *User) SetPassServer(password, ts, prefix string) os.Error {
-	if len(u.user) > 0 {
-		return parser.NewNumeric(parser.ERR_ALREADYREGISTRED)
-	}
-
-	if len(password) == 0 {
-		return os.NewError("Zero-length password")
-	}
-
-	if ts != "6" {
-		return os.NewError("TS " + ts + " is unsupported")
-	}
-
-	if !parser.ValidServerPrefix(prefix) {
-		return os.NewError("SID " + prefix + " is invalid")
-	}
-
-	u.pass, u.sver, u.spfx = password, 6, prefix
-	u.ts = time.Nanoseconds()
-	return nil
-}
-
-func (u *User) SetCapab(capab string) os.Error {
-	if len(u.user) > 0 {
-		return parser.NewNumeric(parser.ERR_ALREADYREGISTRED)
-	}
-
-	if !strings.Contains(capab, "QS") {
-		return os.NewError("QS CAPAB missing")
-	}
-
-	if !strings.Contains(capab, "ENCAP") {
-		return os.NewError("ENCAP CAPAB missing")
-	}
-
-	u.capab = strings.Fields(capab)
-	u.ts = time.Nanoseconds()
-	return nil
-}
-
-func (u *User) SetServer(serv, hops string) os.Error {
-	if len(u.user) > 0 {
-		return parser.NewNumeric(parser.ERR_ALREADYREGISTRED)
-	}
-
-	if len(serv) == 0 {
-		return os.NewError("Zero-length server name")
-	}
-
-	if hops != "1" {
-		return os.NewError("Hops = " + hops + " is unsupported")
-	}
-
-	u.server, u.hops = serv, 1
-	u.ts = time.Nanoseconds()
-	return nil
-}
 
 // Set the user's type (immutable once set).
 func (u *User) SetType(newType userType) os.Error {
@@ -301,6 +235,25 @@ func Delete(id string) {
 		userNicks[nick] = "", false
 		userMap[id] = nil, false
 	}
+}
+
+func Iter() <-chan string {
+	userMutex.RLock()
+	defer userMutex.RUnlock()
+
+	out := make(chan string)
+	ids := make([]string, 0, len(userMap))
+	for _, u := range userMap {
+		ids = append(ids, u.id)
+	}
+
+	go func() {
+		defer close(out)
+		for _, uid := range ids {
+			out <- uid
+		}
+	}()
+	return out
 }
 
 func init() {

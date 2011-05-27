@@ -1,6 +1,7 @@
 package parser
 
 const (
+	// Client commands
 	CMD_NICK   = "NICK"
 	CMD_USER   = "USER"
 	CMD_SERVER = "SERVER"
@@ -23,4 +24,13 @@ const (
 	CMD_WALLOPS = "WALLOPS"
 	CMD_PRIVMSG = "PRIVMSG"
 	CMD_NOTICE  = "NOTICE"
+
+	// Server commands
+	CMD_SJOIN = "SJOIN"
+	CMD_SID   = "SID"
+	CMD_UID   = "UID"
+	CMD_EUID  = "EUID"
+	CMD_ENCAP = "ENCAP"
+	CMD_BMASK = "BMASK"
+	CMD_TB    = "TB"
 )
