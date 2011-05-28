@@ -257,17 +257,6 @@ func Iter() <-chan string {
 }
 
 func Import(uid, nick, user, host, ip, hops, ts, name string) os.Error {
-	its, _ := strconv.Atoi64(ts)
-	u := &User{
-		mutex: new(sync.RWMutex),
-		ts:    its,
-		id:    uid,
-		user:  user,
-		nick:  nick,
-		name:  name,
-		utyp:  RegisteredAsUser,
-	}
-
 	userMutex.Lock()
 	defer userMutex.Unlock()
 
@@ -279,6 +268,17 @@ func Import(uid, nick, user, host, ip, hops, ts, name string) os.Error {
 
 	if _, ok := userNicks[lownick]; ok {
 		return os.NewError("NICK collision")
+	}
+
+	its, _ := strconv.Atoi64(ts)
+	u := &User{
+		mutex: new(sync.RWMutex),
+		ts:    its,
+		id:    uid,
+		user:  user,
+		nick:  nick,
+		name:  name,
+		utyp:  RegisteredAsUser,
 	}
 
 	userMap[uid] = u

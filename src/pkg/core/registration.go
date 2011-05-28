@@ -88,8 +88,29 @@ func ConnReg(hook string, msg *parser.Message, ircd *IRCd) {
 			}
 		}
 
-		nickname, username, _, _ := u.Info()
+		nickname, username, realname, _ := u.Info()
 		if nickname != "*" && username != "" {
+			// Notify servers
+			for sid := range server.Iter() {
+				ircd.ToServer <- &parser.Message{
+					Prefix:  Config.SID,
+					Command: parser.CMD_UID,
+					Args: []string{
+						nickname,
+						"1",
+						u.TS(),
+						"+i",
+						username,
+						"some.host",
+						"127.0.0.1",
+						u.ID(),
+						realname,
+					},
+					DestIDs: []string{sid},
+				}
+			}
+
+			// Process signon
 			sendSignon(u, ircd)
 			return
 		}
@@ -116,6 +137,21 @@ func ConnReg(hook string, msg *parser.Message, ircd *IRCd) {
 
 		sid, serv, pass, capab := s.Info()
 		if sid != "" && serv != "" && pass != "" && len(capab) > 0 {
+			// Notify servers
+			for sid := range server.Iter() {
+				ircd.ToServer <- &parser.Message{
+					Prefix:  Config.SID,
+					Command: parser.CMD_SID,
+					Args: []string{
+						serv,
+						"2",
+						sid,
+						"some server",
+					},
+					DestIDs: []string{sid},
+				}
+			}
+
 			sendServerSignon(s, ircd)
 			Burst(s, ircd)
 		}
@@ -289,17 +325,33 @@ func Uid(hook string, msg *parser.Message, ircd *IRCd) {
 	nickname, hopcount, nickTS := msg.Args[0], msg.Args[1], msg.Args[2]
 	umode, username, hostname := msg.Args[3], msg.Args[4], msg.Args[5]
 	ip, uid, name := msg.Args[6], msg.Args[7], msg.Args[8]
-
-	// need to broadcast (TODO)
-
-	user.Import(uid, nickname, username, hostname, ip, hopcount, nickTS, name)
 	_ = umode
+
+	err := user.Import(uid, nickname, username, hostname, ip, hopcount, nickTS, name)
+	if err != nil {
+		// TODO: TS check - Kill remote or local? For now, we kill remote.
+		ircd.ToServer <- &parser.Message{
+			Prefix:  Config.SID,
+			Command: parser.CMD_SQUIT,
+			Args: []string{
+				uid,
+				err.String(),
+			},
+			DestIDs: []string{msg.SenderID},
+		}
+	}
+
+	for fwd := range server.Iter() {
+		if fwd != msg.SenderID {
+			log.Debug.Printf("Forwarding UID from %s to %s", msg.SenderID, fwd)
+			fmsg := msg.Dup()
+			fmsg.DestIDs = []string{fwd}
+		}
+	}
 }
 
 func Sid(hook string, msg *parser.Message, ircd *IRCd) {
 	servname, hopcount, sid, desc := msg.Args[0], msg.Args[1], msg.Args[2], msg.Args[3]
-
-	// need to broadcast (TODO)
 
 	err := server.Link(msg.Prefix, sid, servname, hopcount, desc)
 	if err != nil {
@@ -313,4 +365,13 @@ func Sid(hook string, msg *parser.Message, ircd *IRCd) {
 			DestIDs: []string{msg.SenderID},
 		}
 	}
+
+	for fwd := range server.Iter() {
+		if fwd != msg.SenderID {
+			log.Debug.Printf("Forwarding SID from %s to %s", msg.SenderID, fwd)
+			fmsg := msg.Dup()
+			fmsg.DestIDs = []string{fwd}
+		}
+	}
+
 }
