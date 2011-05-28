@@ -65,8 +65,8 @@ func SJoin(hook string, msg *parser.Message, ircd *IRCd) {
 
 	// Forward on to other servers
 	for fwd := range server.Iter() {
-		log.Debug.Printf("Forwarding SJOIN from %s to %s", msg.SenderID, fwd)
 		if fwd != msg.SenderID {
+			log.Debug.Printf("Forwarding SJOIN from %s to %s", msg.SenderID, fwd)
 			fmsg := msg.Dup()
 			fmsg.DestIDs = []string{fwd}
 		}

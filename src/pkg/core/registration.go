@@ -18,6 +18,7 @@ var (
 		Register(parser.CMD_PASS, Registration, AnyArgs, ConnReg),
 		Register(parser.CMD_CAPAB, Registration, AnyArgs, ConnReg),
 		Register(parser.CMD_UID, Server, NArgs(9), Uid),
+		Register(parser.CMD_SID, Server, NArgs(4), Sid),
 	}
 	quithook = Register(parser.CMD_QUIT, Any, AnyArgs, Quit)
 )
@@ -289,6 +290,27 @@ func Uid(hook string, msg *parser.Message, ircd *IRCd) {
 	umode, username, hostname := msg.Args[3], msg.Args[4], msg.Args[5]
 	ip, uid, name := msg.Args[6], msg.Args[7], msg.Args[8]
 
+	// need to broadcast (TODO)
+
 	user.Import(uid, nickname, username, hostname, ip, hopcount, nickTS, name)
 	_ = umode
+}
+
+func Sid(hook string, msg *parser.Message, ircd *IRCd) {
+	servname, hopcount, sid, desc := msg.Args[0], msg.Args[1], msg.Args[2], msg.Args[3]
+
+	// need to broadcast (TODO)
+
+	err := server.Link(msg.Prefix, sid, servname, hopcount, desc)
+	if err != nil {
+		ircd.ToServer <- &parser.Message{
+			Prefix:  Config.SID,
+			Command: parser.CMD_SQUIT,
+			Args: []string{
+				sid,
+				err.String(),
+			},
+			DestIDs: []string{msg.SenderID},
+		}
+	}
 }

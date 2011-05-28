@@ -2,8 +2,9 @@ package server
 
 import (
 	"kevlar/ircd/parser"
-	//"kevlar/ircd/log"
+	"kevlar/ircd/log"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -32,8 +33,10 @@ type Server struct {
 	ts     int64
 	styp   servType
 	pass   string
+	desc   string
 	sver   int
 	server string
+	link   string
 	capab  []string
 	hops   int
 }
@@ -68,6 +71,37 @@ func Get(id string) *Server {
 	servMap[id] = s
 	linkMap[id] = id
 	return s
+}
+
+// Link registers a new server linked behind link.
+func Link(link, sid, name, hops, desc string) os.Error {
+	servMutex.Lock()
+	defer servMutex.Unlock()
+
+	if _, ok := servMap[sid]; ok {
+		return os.NewError("Server already linked: " + sid)
+	}
+
+	ihops, _ := strconv.Atoi(hops)
+
+	s := &Server{
+		mutex:  new(sync.RWMutex),
+		id:     sid,
+		server: name,
+		desc:   desc,
+		link:   link,
+		hops:   ihops,
+	}
+
+	if downstream, ok := linkMap[link]; ok {
+		link = downstream
+	}
+
+	log.Info.Printf("Server %s (%s) linked behind %s", name, sid, link)
+
+	servMap[sid] = s
+	linkMap[sid] = link
+	return nil
 }
 
 // Atomically get all of the server's information.

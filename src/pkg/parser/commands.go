@@ -28,6 +28,7 @@ const (
 	// Server commands
 	CMD_SJOIN = "SJOIN"
 	CMD_SID   = "SID"
+	CMD_SQUIT = "SQUIT"
 	CMD_UID   = "UID"
 	CMD_EUID  = "EUID"
 	CMD_ENCAP = "ENCAP"
