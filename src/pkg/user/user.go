@@ -275,12 +275,14 @@ func Import(uid, nick, user, host, ip, hops, ts, name string) os.Error {
 		return os.NewError("UID collision")
 	}
 
-	if _, ok := userNicks[nick]; ok {
+	lownick := parser.ToLower(nick)
+
+	if _, ok := userNicks[lownick]; ok {
 		return os.NewError("NICK collision")
 	}
 
 	userMap[uid] = u
-	userNicks[nick] = uid
+	userNicks[lownick] = uid
 	return nil
 }
 

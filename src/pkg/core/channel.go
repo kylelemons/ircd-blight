@@ -31,6 +31,7 @@ func Join(hook string, msg *parser.Message, ircd *IRCd) {
 			continue
 		}
 
+		// Forward to other servers
 		for sid := range server.Iter() {
 			ircd.ToServer <- &parser.Message{
 				Prefix:  msg.SenderID,
@@ -58,11 +59,19 @@ func Join(hook string, msg *parser.Message, ircd *IRCd) {
 }
 
 func SJoin(hook string, msg *parser.Message, ircd *IRCd) {
-	log.Debug.Printf("SJOIN>>> %v", msg)
-
 	chanTS, channame, mode, uids := msg.Args[0], msg.Args[1], msg.Args[2], msg.Args[3:]
 	_ = chanTS
 	_ = mode
+
+	// Forward on to other servers
+	for fwd := range server.Iter() {
+		log.Debug.Printf("Forwarding SJOIN from %s to %s", msg.SenderID, fwd)
+		if fwd != msg.SenderID {
+			fmsg := msg.Dup()
+			fmsg.DestIDs = []string{fwd}
+		}
+	}
+
 	for i, uid := range uids {
 		uids[i] = uid[len(uid)-9:]
 	}

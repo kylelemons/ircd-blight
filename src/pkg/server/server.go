@@ -2,14 +2,20 @@ package server
 
 import (
 	"kevlar/ircd/parser"
+	//"kevlar/ircd/log"
 	"os"
 	"strings"
 	"sync"
 	"time"
 )
 
+// servMap[SID] = &Server{...}
+// - Stores the information for any server
+// linkMap[server SID] = linked SID
+// - Maps a logical server to the peer to which it's linked
 var (
 	servMap   = make(map[string]*Server)
+	linkMap   = make(map[string]string)
 	servMutex = new(sync.RWMutex)
 )
 
@@ -60,9 +66,9 @@ func Get(id string) *Server {
 		id:    id,
 	}
 	servMap[id] = s
+	linkMap[id] = id
 	return s
 }
-
 
 // Atomically get all of the server's information.
 func GetInfo(id string) (sid, server string, capab []string, typ servType, ok bool) {
@@ -77,19 +83,50 @@ func GetInfo(id string) (sid, server string, capab []string, typ servType, ok bo
 	return s.id, s.server, s.capab, s.styp, true
 }
 
+// Iter iterates over all server links
 func Iter() <-chan string {
 	servMutex.RLock()
 	defer servMutex.RUnlock()
 
 	out := make(chan string)
 	ids := make([]string, 0, len(servMap))
-	for _, s := range servMap {
-		ids = append(ids, s.id)
+	for sid := range linkMap {
+		ids = append(ids, sid)
 	}
 
 	go func() {
 		defer close(out)
 		for _, sid := range ids {
+			out <- sid
+		}
+	}()
+	return out
+}
+
+// IterFor iterates over the link IDs for all of the ID in the given list.
+// The list may contain SIDs, UIDs, or both.  If the skipLink is given,
+// any servers behind that link will be skipped.
+func IterFor(ids []string, skipLink string) <-chan string {
+	servMutex.RLock()
+	defer servMutex.RUnlock()
+
+	if actual, ok := linkMap[skipLink]; ok {
+		skipLink = actual
+	}
+
+	out := make(chan string)
+	links := make(map[string]bool)
+	for _, id := range ids {
+		sid := id[:3]
+		if link, ok := linkMap[sid]; ok {
+			links[link] = true
+		}
+	}
+	links[skipLink] = false, false
+
+	go func() {
+		defer close(out)
+		for sid := range links {
 			out <- sid
 		}
 	}()

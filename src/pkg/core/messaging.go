@@ -4,6 +4,8 @@ import (
 	"kevlar/ircd/parser"
 	"kevlar/ircd/channel"
 	"kevlar/ircd/user"
+	"kevlar/ircd/server"
+	"kevlar/ircd/log"
 	"strings"
 )
 
@@ -17,11 +19,12 @@ var (
 func Privmsg(hook string, msg *parser.Message, ircd *IRCd) {
 	quiet := hook == parser.CMD_NOTICE
 	recipients, text := strings.Split(msg.Args[0], ",", -1), msg.Args[1]
-	destIDs := make([]string, 0, len(recipients))
 	sender := msg.SenderID
 	if len(msg.Prefix) == 9 {
 		sender = msg.Prefix
 	}
+	local := []string{}
+	remote := []string{}
 	for _, name := range recipients {
 		if parser.ValidChannel(name) {
 			channel, err := channel.Get(name, false)
@@ -31,36 +34,41 @@ func Privmsg(hook string, msg *parser.Message, ircd *IRCd) {
 				}
 				continue
 			}
-			userids := []string{}
-			sids := make(map[string]bool)
+			local := []string{}
+			remote := []string{}
 			for _, uid := range channel.UserIDs() {
-				if uid != sender && uid[:3] != msg.SenderID {
+				if uid != sender {
 					if uid[:3] == Config.SID {
-						userids = append(userids, uid)
+						local = append(local, uid)
 					} else {
-						sids[uid[:3]] = true
+						remote = append(remote, uid)
 					}
 				}
 			}
-			for sid := range sids {
-				ircd.ToServer <- &parser.Message{
+			if len(remote) > 0 {
+				for sid := range server.IterFor(remote, msg.SenderID) {
+					log.Debug.Printf("Forwarding PRIVMSG from %s to %s", msg.SenderID, sid)
+					ircd.ToServer <- &parser.Message{
+						Prefix:  sender,
+						Command: hook,
+						Args: []string{
+							channel.Name(),
+							text,
+						},
+						DestIDs: []string{sid},
+					}
+				}
+			}
+			if len(local) > 0 {
+				ircd.ToClient <- &parser.Message{
 					Prefix:  sender,
 					Command: hook,
 					Args: []string{
 						channel.Name(),
 						text,
 					},
-					DestIDs: []string{sid},
+					DestIDs: local,
 				}
-			}
-			ircd.ToClient <- &parser.Message{
-				Prefix:  sender,
-				Command: hook,
-				Args: []string{
-					channel.Name(),
-					text,
-				},
-				DestIDs: userids,
 			}
 			continue
 		}
@@ -72,9 +80,28 @@ func Privmsg(hook string, msg *parser.Message, ircd *IRCd) {
 			}
 			continue
 		}
-		destIDs = append(destIDs, id)
+		if id[:3] == Config.SID {
+			local = append(local, id)
+		} else {
+			remote = append(remote, id)
+		}
 	}
-	if len(destIDs) > 0 {
+	if len(remote) > 0 {
+		for _, remoteid := range remote {
+			for sid := range server.IterFor([]string{remoteid}, "") {
+				ircd.ToServer <- &parser.Message{
+					Prefix:  sender,
+					Command: hook,
+					Args: []string{
+						remoteid,
+						text,
+					},
+					DestIDs: []string{sid},
+				}
+			}
+		}
+	}
+	if len(local) > 0 {
 		ircd.ToClient <- &parser.Message{
 			Prefix:  sender,
 			Command: hook,
@@ -82,7 +109,7 @@ func Privmsg(hook string, msg *parser.Message, ircd *IRCd) {
 				"*",
 				text,
 			},
-			DestIDs: destIDs,
+			DestIDs: local,
 		}
 	}
 }
