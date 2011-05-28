@@ -29,6 +29,13 @@ func NArgs(count int) CallConstraints {
 	}
 }
 
+func MinArgs(min int) CallConstraints {
+	return CallConstraints{
+		MinArgs: min,
+		MaxArgs: -1,
+	}
+}
+
 func OptArgs(required, optional int) CallConstraints {
 	return CallConstraints{
 		MinArgs: required,
@@ -103,7 +110,7 @@ func DispatchServer(message *parser.Message, ircd *IRCd) {
 	case server.Unregistered:
 		mask |= Registration
 	case server.RegisteredAsServer:
-		mask |= User
+		mask |= Server
 	}
 	for _, hook := range registeredHooks[hookName] {
 		if hook.When&mask == mask {

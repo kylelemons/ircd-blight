@@ -75,6 +75,17 @@ func (c *Channel) UserIDs() []string {
 	return ids
 }
 
+// Get the chanel member IDs with prefixes
+func (c *Channel) UserIDsWithPrefix() []string {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	ids := make([]string, 0, len(c.users))
+	for id := range c.users {
+		ids = append(ids, id)
+	}
+	return ids
+}
+
 // Get whether a user is on the channel.
 func (c *Channel) OnChan(uid string) (on bool) {
 	c.mutex.RLock()
@@ -84,17 +95,19 @@ func (c *Channel) OnChan(uid string) (on bool) {
 }
 
 // Join a user to the channel.
-func (c *Channel) Join(uid string, hostmask string) (notify []string, err os.Error) {
+func (c *Channel) Join(uids ...string) (notify []string, err os.Error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	if _, on := c.users[uid]; on {
-		return nil, parser.NewNumeric(parser.ERR_USERONCHANNEL, uid, c.name)
-	}
+	for _, uid := range uids {
+		if _, on := c.users[uid]; on {
+			return nil, parser.NewNumeric(parser.ERR_USERONCHANNEL, uid, c.name)
+		}
 
-	// TODO(kevlar): Check hostmask
-	c.users[uid] = hostmask
-	c.ts = time.Nanoseconds()
+		// TODO(kevlar): Check hostmask
+		c.users[uid] = "host@mask"
+		c.ts = time.Nanoseconds()
+	}
 
 	notify = make([]string, 0, len(c.users))
 	for id := range c.users {

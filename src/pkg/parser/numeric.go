@@ -53,3 +53,11 @@ func (n *Numeric) Message(destIDs ...string) *Message {
 		DestIDs: destIDs,
 	}
 }
+
+func (n *Numeric) Error(destIDs ...string) *Message {
+	return &Message{
+		Command: CMD_ERROR,
+		Args:    n.args,
+		DestIDs: destIDs,
+	}
+}

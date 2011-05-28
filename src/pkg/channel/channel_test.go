@@ -66,18 +66,20 @@ func TestJoinPartChannel(t *testing.T) {
 		channel, _ := Get(test.Channel, true)
 		switch test.Command {
 		case parser.CMD_JOIN:
-			notify, err = channel.Join(test.ID, "")
+			notify, err = channel.Join(test.ID)
 		case parser.CMD_PART:
 			notify, err = channel.Part(test.ID)
 		}
-		if got, want := err, test.Error; got != want && got.String() != want.String() {
-			t.Errorf("#%d: %s returned %s, want %s", idx, test.Command, got, want)
+		if got, want := err, test.Error; got != want {
+			if got == nil || want == nil || got.String() != want.String() {
+				t.Errorf("#%d: %s returned %v, want %v", idx, test.Command, got, want)
+			}
 		}
 		if got, want := len(chanMap), test.Chans; got != want {
 			t.Errorf("#%d: chans after %s = %d, want %d", idx, test.Command, got, want)
 		}
-		if got, want := len(notify), len(test.Notify); got != want {
-			t.Errorf("#%d: len(%s notify) = %d, want %d", idx, test.Command, got, want)
+		if got, want := notify, test.Notify; len(got) != len(want) {
+			t.Errorf("#%d: %s notify = %v, want %v", idx, test.Command, got, want)
 		} else {
 			for i := range notify {
 				if got, want := notify[i], test.Notify[i]; got != want {

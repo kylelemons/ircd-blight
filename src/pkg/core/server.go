@@ -65,7 +65,12 @@ func (s *IRCd) manageServers() {
 			//sentcount := 0
 			for _, dest := range msg.DestIDs {
 				log.Debug.Printf("{%v} << %s\n", dest, msg)
-				sid2conn[dest].WriteMessage(msg)
+
+				if conn, ok := sid2conn[dest]; ok {
+					conn.WriteMessage(msg)
+				} else {
+					log.Warn.Printf("Unknown SID %s", dest)
+				}
 			}
 
 		//// Connection management

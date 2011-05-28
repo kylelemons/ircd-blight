@@ -7,6 +7,7 @@ import (
 	"kevlar/ircd/server"
 	"kevlar/ircd/user"
 	"os"
+	"strings"
 )
 
 var (
@@ -16,6 +17,7 @@ var (
 		Register(parser.CMD_SERVER, Registration, AnyArgs, ConnReg),
 		Register(parser.CMD_PASS, Registration, AnyArgs, ConnReg),
 		Register(parser.CMD_CAPAB, Registration, AnyArgs, ConnReg),
+		Register(parser.CMD_UID, Server, NArgs(9), Uid),
 	}
 	quithook = Register(parser.CMD_QUIT, Any, AnyArgs, Quit)
 )
@@ -189,6 +191,7 @@ func sendServerSignon(s *server.Server, ircd *IRCd) {
 	msg = &parser.Message{
 		Command: parser.CMD_CAPAB,
 		Args: []string{
+			//"QS EX CHW IE KLN KNOCK TB UNKLN CLUSTER ENCAP SERVICES RSFNC SAVE EUID EOPMOD BAN MLOCK",
 			"QS ENCAP", // TODO
 		},
 		DestIDs: destIDs,
@@ -253,13 +256,10 @@ func Burst(serv *server.Server, ircd *IRCd) {
 				chanobj.TS(),
 				channame,
 				// modes, params...
-				"+nt",
+				"+", // "+nt",
+				strings.Join(chanobj.UserIDsWithPrefix(), " "),
 			},
 			DestIDs: destIDs,
-		}
-		for _, uid := range chanobj.UserIDs() {
-			upfx := ""
-			msg.Args = append(msg.Args, upfx+uid)
 		}
 		ircd.ToServer <- msg
 	}
@@ -282,4 +282,13 @@ func Quit(hook string, msg *parser.Message, ircd *IRCd) {
 		},
 	}
 	ircd.ToClient <- error
+}
+
+func Uid(hook string, msg *parser.Message, ircd *IRCd) {
+	nickname, hopcount, nickTS := msg.Args[0], msg.Args[1], msg.Args[2]
+	umode, username, hostname := msg.Args[3], msg.Args[4], msg.Args[5]
+	ip, uid, name := msg.Args[6], msg.Args[7], msg.Args[8]
+
+	user.Import(uid, nickname, username, hostname, ip, hopcount, nickTS, name)
+	_ = umode
 }
