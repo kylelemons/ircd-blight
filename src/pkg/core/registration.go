@@ -20,7 +20,10 @@ var (
 		Register(parser.CMD_UID, Server, NArgs(9), Uid),
 		Register(parser.CMD_SID, Server, NArgs(4), Sid),
 	}
-	quithook = Register(parser.CMD_QUIT, Any, AnyArgs, Quit)
+	quithooks = []*Hook{
+		Register(parser.CMD_QUIT, User, AnyArgs, Quit),
+		Register(parser.CMD_QUIT, Server, NArgs(2), Quit),
+	}
 )
 
 // Handle the NICK, USER, SERVER, and PASS messages
@@ -304,23 +307,6 @@ func Burst(serv *server.Server, ircd *IRCd) {
 	// Optional: TB
 }
 
-func Quit(hook string, msg *parser.Message, ircd *IRCd) {
-	reason := "Client Quit"
-	if len(msg.Args) > 0 {
-		reason = msg.Args[0]
-	}
-	error := &parser.Message{
-		Command: parser.CMD_ERROR,
-		Args: []string{
-			"Closing Link (" + reason + ")",
-		},
-		DestIDs: []string{
-			msg.SenderID,
-		},
-	}
-	ircd.ToClient <- error
-}
-
 func Uid(hook string, msg *parser.Message, ircd *IRCd) {
 	nickname, hopcount, nickTS := msg.Args[0], msg.Args[1], msg.Args[2]
 	umode, username, hostname := msg.Args[3], msg.Args[4], msg.Args[5]
@@ -373,5 +359,68 @@ func Sid(hook string, msg *parser.Message, ircd *IRCd) {
 			fmsg.DestIDs = []string{fwd}
 		}
 	}
+}
 
+func Quit(hook string, msg *parser.Message, ircd *IRCd) {
+	var quitter string
+	reason := "Client Quit"
+
+	if len(msg.Args) > 0 {
+		reason = msg.Args[0]
+	}
+
+	if len(msg.SenderID) == 3 {
+		quitter = msg.Prefix
+	} else {
+		quitter = msg.SenderID
+		error := &parser.Message{
+			Command: parser.CMD_ERROR,
+			Args: []string{
+				"Closing Link (" + reason + ")",
+			},
+			DestIDs: []string{
+				quitter,
+			},
+		}
+		ircd.ToClient <- error
+	}
+
+	for sid := range server.Iter() {
+		log.Debug.Printf("Forwarding QUIT from %s to %s", quitter, sid)
+		if sid != msg.SenderID {
+			ircd.ToServer <- &parser.Message{
+				Prefix:  quitter,
+				Command: parser.CMD_QUIT,
+				Args: []string{
+					reason,
+				},
+				DestIDs: []string{sid},
+			}
+		}
+	}
+
+	members := channel.PartAll(quitter)
+	log.Debug.Printf("QUIT recipients: %#v", members)
+	peers := make(map[string]bool)
+	for _, users := range members {
+		for _, uid := range users {
+			if uid[:3] == Config.SID && uid != quitter {
+				peers[uid] = true
+			}
+		}
+	}
+	if len(peers) > 0 {
+		notify := []string{}
+		for peer := range peers {
+			notify = append(notify, peer)
+		}
+		ircd.ToClient <- &parser.Message{
+			Prefix:  quitter,
+			Command: parser.CMD_QUIT,
+			Args: []string{
+				"Quit: " + reason,
+			},
+			DestIDs: notify,
+		}
+	}
 }

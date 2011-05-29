@@ -62,15 +62,20 @@ func (s *IRCd) manageServers() {
 		// Messages from hooks
 		case msg, open = <-s.ToServer:
 			// Count the number of messages sent
-			//sentcount := 0
+			sentcount := 0
 			for _, dest := range msg.DestIDs {
 				log.Debug.Printf("{%v} << %s\n", dest, msg)
 
 				if conn, ok := sid2conn[dest]; ok {
 					conn.WriteMessage(msg)
+					sentcount++
 				} else {
 					log.Warn.Printf("Unknown SID %s", dest)
 				}
+			}
+
+			if sentcount == 0 {
+				log.Warn.Printf("Dropped outgoing server message: %s", msg)
 			}
 
 		//// Connection management
@@ -215,7 +220,7 @@ func (s *IRCd) manageClients() {
 				}
 			}
 			if sentcount == 0 {
-				log.Warn.Printf("Dropped outgoing message: %s", msg)
+				log.Warn.Printf("Dropped outgoing client message: %s", msg)
 			}
 
 		// Connecting clients

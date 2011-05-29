@@ -160,6 +160,38 @@ func (c *Channel) Part(uid string) (notify []string, err os.Error) {
 	return
 }
 
+func PartAll(uid string) (notify map[string][]string) {
+	chanMutex.Lock()
+	defer chanMutex.Unlock()
+
+	notify = make(map[string][]string)
+
+	part := func(c *Channel) {
+		c.mutex.Lock()
+		defer c.mutex.Unlock()
+
+		if _, on := c.users[uid]; !on {
+			return
+		}
+
+		for id := range c.users {
+			notify[c.name] = append(notify[c.name], id)
+		}
+		c.users[uid] = "", false
+		c.ts = time.Nanoseconds()
+
+		if len(c.users) == 0 {
+			chanMap[c.name] = nil, false
+		}
+	}
+
+	for _, c := range chanMap {
+		part(c)
+	}
+
+	return
+}
+
 func Iter() <-chan string {
 	chanMutex.RLock()
 	defer chanMutex.RUnlock()

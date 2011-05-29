@@ -103,7 +103,7 @@ func Part(hook string, msg *parser.Message, ircd *IRCd) {
 		if len(notify) > 0 {
 			ircd.ToClient <- &parser.Message{
 				Prefix:  msg.SenderID,
-				Command: parser.CMD_JOIN,
+				Command: parser.CMD_PART,
 				Args: []string{
 					channel.Name(),
 				},
@@ -177,7 +177,7 @@ func SJoin(hook string, msg *parser.Message, ircd *IRCd) {
 		for _, joiner := range uids {
 			ircd.ToClient <- &parser.Message{
 				Prefix:  joiner,
-				Command: parser.CMD_PART,
+				Command: parser.CMD_JOIN,
 				Args: []string{
 					channel.Name(),
 				},
