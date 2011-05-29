@@ -17,6 +17,7 @@ var (
 	}
 )
 
+// Local joins only
 func Join(hook string, msg *parser.Message, ircd *IRCd) {
 	for _, channame := range strings.Split(msg.Args[0], ",", -1) {
 		channel, err := channel.Get(channame, true)
@@ -25,10 +26,17 @@ func Join(hook string, msg *parser.Message, ircd *IRCd) {
 			continue
 		}
 
-		notify, err := channel.Join(msg.SenderID)
+		members, err := channel.Join(msg.SenderID)
 		if num, ok := err.(*parser.Numeric); ok {
 			ircd.ToClient <- num.Message(msg.SenderID)
 			continue
+		}
+
+		notify := []string{}
+		for _, uid := range members {
+			if uid[:3] == Config.SID {
+				notify = append(notify, uid)
+			}
 		}
 
 		// Forward to other servers
@@ -45,19 +53,22 @@ func Join(hook string, msg *parser.Message, ircd *IRCd) {
 			}
 		}
 
-		ircd.ToClient <- &parser.Message{
-			Prefix:  msg.SenderID,
-			Command: parser.CMD_JOIN,
-			Args: []string{
-				channel.Name(),
-			},
-			DestIDs: notify,
+		if len(notify) > 0 {
+			ircd.ToClient <- &parser.Message{
+				Prefix:  msg.SenderID,
+				Command: parser.CMD_JOIN,
+				Args: []string{
+					channel.Name(),
+				},
+				DestIDs: notify,
+			}
 		}
 
 		ircd.ToClient <- channel.NamesMessage(msg.SenderID)
 	}
 }
 
+// Server JOIN and SJOIN
 func SJoin(hook string, msg *parser.Message, ircd *IRCd) {
 	chanTS, channame, mode, uids := msg.Args[0], msg.Args[1], msg.Args[2], msg.Args[3:]
 	_ = chanTS
@@ -99,14 +110,16 @@ func SJoin(hook string, msg *parser.Message, ircd *IRCd) {
 		}
 	}
 
-	for _, joiner := range uids {
-		ircd.ToClient <- &parser.Message{
-			Prefix:  joiner,
-			Command: parser.CMD_JOIN,
-			Args: []string{
-				channel.Name(),
-			},
-			DestIDs: notify,
+	if len(notify) > 0 {
+		for _, joiner := range uids {
+			ircd.ToClient <- &parser.Message{
+				Prefix:  joiner,
+				Command: parser.CMD_JOIN,
+				Args: []string{
+					channel.Name(),
+				},
+				DestIDs: notify,
+			}
 		}
 	}
 }

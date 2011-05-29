@@ -23,5 +23,5 @@ _testmain.go
 *.orig
 
 src/cmd/ircd/ircd
-ircd.conf
-ircd.log
+ircd*.conf
+ircd*.log

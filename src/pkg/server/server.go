@@ -123,14 +123,14 @@ func Iter() <-chan string {
 	defer servMutex.RUnlock()
 
 	out := make(chan string)
-	ids := make([]string, 0, len(servMap))
-	for sid := range linkMap {
-		ids = append(ids, sid)
+	links := make(map[string]bool)
+	for _, link := range linkMap {
+		links[link] = true
 	}
 
 	go func() {
 		defer close(out)
-		for _, sid := range ids {
+		for sid := range links {
 			out <- sid
 		}
 	}()

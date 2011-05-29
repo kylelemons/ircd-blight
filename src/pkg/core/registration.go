@@ -206,7 +206,7 @@ func sendSignon(u *user.User, ircd *IRCd) {
 }
 
 func sendServerSignon(s *server.Server, ircd *IRCd) {
-	log.Info.Printf("[%s] ** Registered As Server\n", s.ID())
+	log.Info.Printf("{%s} ** Registered As Server\n", s.ID())
 	s.SetType(server.RegisteredAsServer)
 
 	destIDs := []string{s.ID()}
