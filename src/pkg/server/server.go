@@ -10,14 +10,23 @@ import (
 	"time"
 )
 
+// For the purposes of this file, think of the current server as the root of a
+// tree where each node has its links hanging below it.  Downstream refers to
+// any server directly connected below the node, upstream refers to the single
+// server above the node.
+
 // servMap[SID] = &Server{...}
 // - Stores the information for any server
-// linkMap[server SID] = linked SID
+// upstream[remote SID] = upstream SID
 // - Maps a logical server to the peer to which it's linked
+// - Locally linked servers aren't in this map.
+// downstream[sid1][sid2] = bool
+// - if downstream[sid1][sid2] == true, sid2 is directly downstream of sid1
 var (
-	servMap   = make(map[string]*Server)
-	linkMap   = make(map[string]string)
-	servMutex = new(sync.RWMutex)
+	servMap    = make(map[string]*Server)
+	upstream   = make(map[string]string)
+	downstream = make(map[string]map[string]bool)
+	servMutex  = new(sync.RWMutex)
 )
 
 type servType int
@@ -56,7 +65,9 @@ func (s *Server) Info() (sid, server, pass string, capab []string) {
 	return s.id, s.server, s.pass, s.capab
 }
 
-func Get(id string) *Server {
+// Get retrieves and/or creates a server.  If a server is created,
+// it is directly linked to this one.
+func Get(id string, create bool) *Server {
 	servMutex.Lock()
 	defer servMutex.Unlock()
 
@@ -64,12 +75,16 @@ func Get(id string) *Server {
 		return s
 	}
 
+	if !create {
+		return nil
+	}
+
 	s := &Server{
 		mutex: new(sync.RWMutex),
 		id:    id,
 	}
 	servMap[id] = s
-	linkMap[id] = id
+	downstream[id] = make(map[string]bool)
 	return s
 }
 
@@ -93,14 +108,21 @@ func Link(link, sid, name, hops, desc string) os.Error {
 		hops:   ihops,
 	}
 
-	if downstream, ok := linkMap[link]; ok {
-		link = downstream
+	servMap[sid] = s
+	upstream[sid] = link
+	downstream[link][sid] = true
+	downstream[sid] = make(map[string]bool)
+
+	up := link
+	chain := 1
+	for len(up) > 0 {
+		up, _ = upstream[up]
+		chain++
 	}
 
 	log.Info.Printf("Server %s (%s) linked behind %s", name, sid, link)
+	log.Info.Printf("%s: %d hops found, %d hops reported", sid, chain, ihops)
 
-	servMap[sid] = s
-	linkMap[sid] = link
 	return nil
 }
 
@@ -123,14 +145,17 @@ func Iter() <-chan string {
 	defer servMutex.RUnlock()
 
 	out := make(chan string)
-	links := make(map[string]bool)
-	for _, link := range linkMap {
-		links[link] = true
+	links := make([]string, 0, len(downstream))
+	for link := range servMap {
+		if _, skip := upstream[link]; skip {
+			continue
+		}
+		links = append(links, link)
 	}
 
 	go func() {
 		defer close(out)
-		for sid := range links {
+		for _, sid := range links {
 			out <- sid
 		}
 	}()
@@ -144,23 +169,41 @@ func IterFor(ids []string, skipLink string) <-chan string {
 	servMutex.RLock()
 	defer servMutex.RUnlock()
 
-	if actual, ok := linkMap[skipLink]; ok {
-		skipLink = actual
+	for {
+		if actual, ok := upstream[skipLink]; ok {
+			skipLink = actual
+		} else {
+			break
+		}
 	}
 
 	out := make(chan string)
-	links := make(map[string]bool)
+	links := []string{}
+	cache := make(map[string]bool)
+
+nextId:
 	for _, id := range ids {
 		sid := id[:3]
-		if link, ok := linkMap[sid]; ok {
-			links[link] = true
+		for {
+			if cache[sid] {
+				continue nextId
+			}
+			cache[sid] = true
+			if actual, ok := upstream[sid]; ok {
+				sid = actual
+			} else {
+				break
+			}
 		}
+		if sid == skipLink {
+			continue nextId
+		}
+		links = append(links, sid)
 	}
-	links[skipLink] = false, false
 
 	go func() {
 		defer close(out)
-		for sid := range links {
+		for _, sid := range links {
 			out <- sid
 		}
 	}()
@@ -220,4 +263,52 @@ func (s *Server) SetServer(serv, hops string) os.Error {
 	s.server, s.hops = serv, 1
 	s.ts = time.Nanoseconds()
 	return nil
+}
+
+// Return the SIDs of all servers behind the given link, starting with the
+// server itself.  If the server is unknown, the returned list is empty.
+func LinkedTo(link string) []string {
+	servMutex.Lock()
+	defer servMutex.Unlock()
+
+	return linkedTo(link)
+}
+
+// Make sure the server mutex is (r)locked before calling this.
+func linkedTo(link string) []string {
+	if _, ok := servMap[link]; !ok {
+		log.Warn.Printf("Mapping nonexistent link %s", link)
+		return nil
+	}
+
+	sids := []string{link}
+	for downstream := range downstream[link] {
+		sids = append(sids, linkedTo(downstream)...)
+	}
+
+	return sids
+}
+
+// Unlink deletes the given server and all servers behind it
+func Unlink(split string) {
+	servMutex.Lock()
+	defer servMutex.Unlock()
+
+	for _, sid := range linkedTo(split) {
+		log.Info.Printf("Split %s: Unlinking %s", split, sid)
+
+		// Delete the server entry
+		servMap[sid] = nil, false
+
+		// Unlink from the upstream server's downstream list
+		if up, ok := upstream[sid]; ok {
+			// But only if the upstream server is still around
+			if _, ok := downstream[up]; ok {
+				downstream[up][sid] = false, false
+			}
+		}
+
+		// Remove the server's downstream list
+		downstream[sid] = nil, false
+	}
 }

@@ -83,7 +83,7 @@ func (s *IRCd) manageServers() {
 		case conn := <-s.newServer:
 			sid := conn.ID()
 			sid2conn[sid] = conn
-			server.Get(sid)
+			server.Get(sid, true)
 			log.Debug.Printf("{%s} ** Registered connection", sid)
 			conn.Subscribe(s.fromServer)
 			conn.SubscribeClose(s.serverClosing)

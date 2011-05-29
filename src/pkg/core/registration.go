@@ -34,7 +34,7 @@ func ConnReg(hook string, msg *parser.Message, ircd *IRCd) {
 
 	switch len(msg.SenderID) {
 	case 3:
-		s = server.Get(msg.SenderID)
+		s = server.Get(msg.SenderID, true)
 	case 9:
 		u = user.Get(msg.SenderID)
 	}
