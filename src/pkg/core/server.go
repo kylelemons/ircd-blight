@@ -90,6 +90,7 @@ func (s *IRCd) manageServers() {
 		// Disconnecting servers
 		case closeid := <-s.serverClosing:
 			log.Debug.Printf("{%s} ** Connection closed", closeid)
+			// TODO(kevlar): Delete server
 			user.Delete(closeid)
 			sid2conn[closeid] = nil, false
 		}
@@ -119,6 +120,7 @@ func (s *IRCd) manageClients() {
 				conn := uid2conn[uid]
 				if conn != nil {
 					log.Debug.Printf("[%s] ** Connection terminated remotely", uid)
+					user.Delete(uid)
 					uid2conn[uid] = nil, false
 					conn.UnsubscribeClose(s.clientClosing)
 					conn.Close()
