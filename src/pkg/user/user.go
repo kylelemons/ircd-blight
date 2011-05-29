@@ -4,6 +4,7 @@ import (
 	"kevlar/ircd/parser"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -231,7 +232,10 @@ func Delete(id string) {
 
 	// Database lookup?
 	if u, ok := userMap[id]; ok {
-		nick := u.Nick()
+		u.mutex.RLock()
+		defer u.mutex.RUnlock()
+
+		nick := strings.ToLower(u.nick)
 		userNicks[nick] = "", false
 		userMap[id] = nil, false
 	}

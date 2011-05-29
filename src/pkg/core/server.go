@@ -155,7 +155,7 @@ func (s *IRCd) manageClients() {
 			remote := make([]string, 0, len(msg.DestIDs))
 
 			for _, id := range msg.DestIDs {
-				if sid := id[0:3]; sid != Config.SID {
+				if id[:3] != Config.SID {
 					remote = append(remote, id)
 					continue
 				}
@@ -164,10 +164,13 @@ func (s *IRCd) manageClients() {
 
 			// Pass the message to the server goroutine
 			if len(remote) > 0 {
-				msg.DestIDs = local
-				msg := msg.Dup()
-				msg.DestIDs = remote
-				s.ToServer <- msg
+				if closeafter {
+					for _, id := range remote {
+						user.Delete(id)
+					}
+				} else {
+					log.Warn.Printf("Dropping non-local: %s", len(remote), msg)
+				}
 
 				// Short circuit if there are no local recipients
 				if len(local) == 0 {

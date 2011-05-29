@@ -133,7 +133,16 @@ func Part(hook string, msg *parser.Message, ircd *IRCd) {
 
 // Server JOIN and SJOIN
 func SJoin(hook string, msg *parser.Message, ircd *IRCd) {
-	chanTS, channame, mode, uids := msg.Args[0], msg.Args[1], msg.Args[2], msg.Args[3:]
+	chanTS, channame, mode := msg.Args[0], msg.Args[1], msg.Args[2]
+
+	uids := []string{msg.Prefix}
+	if len(msg.Prefix) == 3 {
+		if len(msg.Args) == 3 {
+			return
+		}
+		uids = strings.Split(msg.Args[3], " ", -1)
+	}
+
 	_ = chanTS
 	_ = mode
 

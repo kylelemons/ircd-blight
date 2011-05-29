@@ -362,7 +362,7 @@ func Sid(hook string, msg *parser.Message, ircd *IRCd) {
 }
 
 func Quit(hook string, msg *parser.Message, ircd *IRCd) {
-	var quitter string
+	quitter := msg.SenderID
 	reason := "Client Quit"
 
 	if len(msg.Args) > 0 {
@@ -371,18 +371,6 @@ func Quit(hook string, msg *parser.Message, ircd *IRCd) {
 
 	if len(msg.SenderID) == 3 {
 		quitter = msg.Prefix
-	} else {
-		quitter = msg.SenderID
-		error := &parser.Message{
-			Command: parser.CMD_ERROR,
-			Args: []string{
-				"Closing Link (" + reason + ")",
-			},
-			DestIDs: []string{
-				quitter,
-			},
-		}
-		ircd.ToClient <- error
 	}
 
 	for sid := range server.Iter() {
@@ -423,4 +411,16 @@ func Quit(hook string, msg *parser.Message, ircd *IRCd) {
 			DestIDs: notify,
 		}
 	}
+
+	// Will be dropped if it's a remote client
+	error := &parser.Message{
+		Command: parser.CMD_ERROR,
+		Args: []string{
+			"Closing Link (" + reason + ")",
+		},
+		DestIDs: []string{
+			quitter,
+		},
+	}
+	ircd.ToClient <- error
 }
