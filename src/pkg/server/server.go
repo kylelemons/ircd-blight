@@ -121,7 +121,9 @@ func Link(link, sid, name, hops, desc string) os.Error {
 	}
 
 	log.Info.Printf("Server %s (%s) linked behind %s", name, sid, link)
-	log.Info.Printf("%s: %d hops found, %d hops reported", sid, chain, ihops)
+	if chain != ihops {
+		log.Warn.Printf("%s: %d hops found, %d hops reported", sid, chain, ihops)
+	}
 
 	return nil
 }

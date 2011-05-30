@@ -34,4 +34,7 @@ const (
 	CMD_ENCAP = "ENCAP"
 	CMD_BMASK = "BMASK"
 	CMD_TB    = "TB"
+
+	// Internal commands
+	INT_DELUSER = "deluser" // Delete all UIDs in DestIDs
 )

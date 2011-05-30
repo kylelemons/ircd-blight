@@ -56,20 +56,35 @@ func (s *IRCd) manageServers() {
 		//// Incoming and outgoing messages to and from servers
 		// Messages directly from connections
 		case msg = <-s.fromServer:
+			var conn *conn.Conn
+			var ok bool
+			if conn, ok = sid2conn[msg.SenderID]; !ok {
+				log.Debug.Printf("{%s} >> [DROPPING] %s\n", msg.SenderID, msg)
+				continue
+			}
 			log.Debug.Printf("{%s} >> %s\n", msg.SenderID, msg)
-			DispatchServer(msg, s)
 
 			if msg.Command == parser.CMD_ERROR {
-				conn := sid2conn[msg.SenderID]
 				if conn != nil {
 					log.Debug.Printf("{%s} ** Connection terminated remotely", msg.SenderID)
-					// TODO(kevlar): Generate SQUIT?
 					sid2conn[msg.SenderID] = nil, false
 					conn.UnsubscribeClose(s.serverClosing)
 					conn.Close()
+					if server.IsLocal(msg.SenderID) {
+						DispatchServer(&parser.Message{
+							SenderID: msg.SenderID,
+							Command:  parser.CMD_SQUIT,
+							Args: []string{
+								msg.SenderID,
+								"Unexpected ERROR on connection",
+							},
+						}, s)
+					}
 				}
 				continue
 			}
+
+			DispatchServer(msg, s)
 
 		// Messages from hooks
 		case msg, open = <-s.ToServer:
@@ -102,8 +117,17 @@ func (s *IRCd) manageServers() {
 		// Disconnecting servers
 		case closeid := <-s.serverClosing:
 			log.Debug.Printf("{%s} ** Connection closed", closeid)
-			// TODO(kevlar): Generate SQUIT?
 			sid2conn[closeid] = nil, false
+			if server.IsLocal(closeid) {
+				DispatchServer(&parser.Message{
+					SenderID: closeid,
+					Command:  parser.CMD_SQUIT,
+					Args: []string{
+						closeid,
+						"Connection close",
+					},
+				}, s)
+			}
 		}
 	}
 }
@@ -144,6 +168,19 @@ func (s *IRCd) manageClients() {
 
 		// Messages from hooks
 		case msg, open = <-s.ToClient:
+			// Handle internal messages
+			switch msg.Command {
+			case parser.INT_DELUSER:
+				// This is sent over the channel to ensure that all user messages
+				// which may need to query these UIDs are sent before they are
+				// removed.
+				for _, uid := range msg.DestIDs {
+					log.Debug.Printf("[%s] Netsplit", uid)
+					user.Delete(uid)
+				}
+				continue
+			}
+
 			// Count the number of messages sent
 			sentcount := 0
 

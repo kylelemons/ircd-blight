@@ -460,12 +460,21 @@ func SQuit(hook string, msg *parser.Message, ircd *IRCd) {
 	log.Debug.Printf(" - Notify: %v", notify)
 
 	for uid, peers := range notify {
+		if len(peers) > 0 {
+			ircd.ToClient <- &parser.Message{
+				Prefix:  uid,
+				Command: parser.CMD_QUIT,
+				Args: []string{
+					"*.net *.split",
+				},
+				DestIDs: peers,
+			}
+		}
+	}
+	// Delete all of the peers
+	if len(peers) > 0 {
 		ircd.ToClient <- &parser.Message{
-			Prefix:  uid,
-			Command: parser.CMD_QUIT,
-			Args: []string{
-				"*.net *.split",
-			},
+			Command: parser.INT_DELUSER,
 			DestIDs: peers,
 		}
 	}

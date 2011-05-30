@@ -137,7 +137,7 @@ var linkingTests = []struct {
 		Op:    tLink,
 		SID:   "101",
 		UpSID: "10A",
-		Hops:  "2",
+		Hops:  "3",
 		Map: map[string]map[string]bool{
 			"0AA": {"00A": true, "00B": true},
 			"00A": {"000": true},
@@ -157,7 +157,7 @@ var linkingTests = []struct {
 		Op:    tLink,
 		SID:   "102",
 		UpSID: "101",
-		Hops:  "2",
+		Hops:  "4",
 		Map: map[string]map[string]bool{
 			"0AA": {"00A": true, "00B": true},
 			"00A": {"000": true},

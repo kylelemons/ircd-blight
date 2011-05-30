@@ -52,11 +52,12 @@ func SPing(hook string, msg *parser.Message, ircd *IRCd) {
 		case parser.CMD_PONG:
 			log.Info.Printf("End of BURST from %s", source)
 		}
-	}
-	for sid := range server.IterFor([]string{dest}, msg.SenderID) {
-		log.Debug.Printf("Forwarding %s to %s", hook, sid)
-		msg := msg.Dup()
-		msg.DestIDs = []string{sid}
-		ircd.ToServer <- msg
+	} else {
+		for sid := range server.IterFor([]string{dest}, "") {
+			log.Debug.Printf("Forwarding %s to %s", hook, sid)
+			msg := msg.Dup()
+			msg.DestIDs = []string{sid}
+			ircd.ToServer <- msg
+		}
 	}
 }
