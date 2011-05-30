@@ -260,6 +260,25 @@ func Iter() <-chan string {
 	return out
 }
 
+// Netsplit returns the list of users who will be unreachable when the given list
+// of servers are split from the network.  It does not actually delete them.
+func Netsplit(sids []string) (splitIDs []string) {
+	gone := make(map[string]bool)
+	for _, sid := range sids {
+		gone[sid] = true
+	}
+
+	userMutex.RLock()
+	defer userMutex.RUnlock()
+
+	for _, u := range userMap {
+		if gone[u.id[:3]] {
+			splitIDs = append(splitIDs, u.id)
+		}
+	}
+	return
+}
+
 func Import(uid, nick, user, host, ip, hops, ts, name string) os.Error {
 	userMutex.Lock()
 	defer userMutex.Unlock()

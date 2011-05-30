@@ -1,9 +1,10 @@
 package core
 
 import (
+	"kevlar/ircd/log"
 	"kevlar/ircd/parser"
-	"kevlar/ircd/user"
 	"kevlar/ircd/server"
+	"kevlar/ircd/user"
 )
 
 // Choose in what contexts a hook is called
@@ -103,7 +104,8 @@ func DispatchServer(message *parser.Message, ircd *IRCd) {
 	hookName := message.Command
 	_, _, _, reg, ok := server.GetInfo(message.SenderID)
 	if !ok {
-		panic("Unknown server: " + message.SenderID)
+		log.Warn.Printf("Unknown source server: %s", message.SenderID)
+		return
 	}
 	var mask ExecutionMask
 	switch reg {

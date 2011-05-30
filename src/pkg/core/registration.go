@@ -23,6 +23,7 @@ var (
 	quithooks = []*Hook{
 		Register(parser.CMD_QUIT, User, AnyArgs, Quit),
 		Register(parser.CMD_QUIT, Server, NArgs(2), Quit),
+		Register(parser.CMD_SQUIT, Server, NArgs(2), SQuit),
 	}
 )
 
@@ -423,4 +424,49 @@ func Quit(hook string, msg *parser.Message, ircd *IRCd) {
 		},
 	}
 	ircd.ToClient <- error
+}
+
+func SQuit(hook string, msg *parser.Message, ircd *IRCd) {
+	split, reason := msg.Args[0], msg.Args[1]
+
+	if split == Config.SID {
+		split = msg.SenderID
+	}
+
+	// Forward
+	for sid := range server.Iter() {
+		if sid != msg.SenderID {
+			msg := msg.Dup()
+			msg.DestIDs = []string{sid}
+			ircd.ToServer <- msg
+		}
+	}
+	if server.IsLocal(split) {
+		ircd.ToServer <- &parser.Message{
+			Command: parser.CMD_ERROR,
+			Args: []string{
+				"SQUIT: " + reason,
+			},
+		}
+	}
+
+	sids := server.Unlink(split)
+	peers := user.Netsplit(sids)
+	notify := channel.Netsplit(Config.SID, peers)
+
+	log.Debug.Printf("NET SPLIT: %s", split)
+	log.Debug.Printf(" -   SIDs: %v", sids)
+	log.Debug.Printf(" -  Peers: %v", peers)
+	log.Debug.Printf(" - Notify: %v", notify)
+
+	for uid, peers := range notify {
+		ircd.ToClient <- &parser.Message{
+			Prefix:  uid,
+			Command: parser.CMD_QUIT,
+			Args: []string{
+				"*.net *.split",
+			},
+			DestIDs: peers,
+		}
+	}
 }

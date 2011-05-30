@@ -192,6 +192,58 @@ func PartAll(uid string) (notify map[string][]string) {
 	return
 }
 
+// Netsplit removes the given uids from all channels and returns the users from
+// the given server who should be notified of the splits in a map of splitting
+// user to a list of that user's peers.
+func Netsplit(sid string, uids []string) map[string][]string {
+	leaving2notify := make(map[string]map[string]bool)
+	for _, uid := range uids {
+		leaving2notify[uid] = make(map[string]bool)
+	}
+
+	chanMutex.Lock()
+	defer chanMutex.Unlock()
+
+	split := func(c *Channel) {
+		c.mutex.Lock()
+		defer c.mutex.Unlock()
+
+		leavingChanUIDs := []string{}
+		for leavingUID := range leaving2notify {
+			leavingChanUIDs = append(leavingChanUIDs, leavingUID)
+			c.users[leavingUID] = "", false
+		}
+		if len(leavingChanUIDs) == 0 {
+			return
+		}
+
+		for peerUID := range c.users {
+			if sid != peerUID[:3] {
+				continue
+			}
+			for _, leavingUID := range leavingChanUIDs {
+				leaving2notify[leavingUID][peerUID] = true
+			}
+		}
+
+		if len(c.users) == 0 {
+			chanMap[c.name] = nil, false
+		}
+	}
+
+	for _, c := range chanMap {
+		split(c)
+	}
+
+	notify := make(map[string][]string)
+	for gone, peers := range leaving2notify {
+		for peer := range peers {
+			notify[gone] = append(notify[gone], peer)
+		}
+	}
+	return notify
+}
+
 func Iter() <-chan string {
 	chanMutex.RLock()
 	defer chanMutex.RUnlock()

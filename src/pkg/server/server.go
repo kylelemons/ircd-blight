@@ -265,6 +265,17 @@ func (s *Server) SetServer(serv, hops string) os.Error {
 	return nil
 }
 
+// IsLocal returns true if the SID is locally linked
+func IsLocal(sid string) bool {
+	if _, remote := upstream[sid]; remote {
+		return false
+	}
+	if _, exists := downstream[sid]; !exists {
+		return false
+	}
+	return true
+}
+
 // Return the SIDs of all servers behind the given link, starting with the
 // server itself.  If the server is unknown, the returned list is empty.
 func LinkedTo(link string) []string {
@@ -289,12 +300,15 @@ func linkedTo(link string) []string {
 	return sids
 }
 
-// Unlink deletes the given server and all servers behind it
-func Unlink(split string) {
+// Unlink deletes the given server and all servers behind it.  It returns the list
+// of SIDs that were split.
+func Unlink(split string) (sids []string) {
 	servMutex.Lock()
 	defer servMutex.Unlock()
 
-	for _, sid := range linkedTo(split) {
+	sids = linkedTo(split)
+
+	for _, sid := range sids {
 		log.Info.Printf("Split %s: Unlinking %s", split, sid)
 
 		// Delete the server entry
@@ -311,4 +325,6 @@ func Unlink(split string) {
 		// Remove the server's downstream list
 		downstream[sid] = nil, false
 	}
+
+	return
 }

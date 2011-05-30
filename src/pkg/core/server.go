@@ -59,6 +59,18 @@ func (s *IRCd) manageServers() {
 			log.Debug.Printf("{%s} >> %s\n", msg.SenderID, msg)
 			DispatchServer(msg, s)
 
+			if msg.Command == parser.CMD_ERROR {
+				conn := sid2conn[msg.SenderID]
+				if conn != nil {
+					log.Debug.Printf("{%s} ** Connection terminated remotely", msg.SenderID)
+					// TODO(kevlar): Generate SQUIT?
+					sid2conn[msg.SenderID] = nil, false
+					conn.UnsubscribeClose(s.serverClosing)
+					conn.Close()
+				}
+				continue
+			}
+
 		// Messages from hooks
 		case msg, open = <-s.ToServer:
 			// Count the number of messages sent
@@ -90,8 +102,7 @@ func (s *IRCd) manageServers() {
 		// Disconnecting servers
 		case closeid := <-s.serverClosing:
 			log.Debug.Printf("{%s} ** Connection closed", closeid)
-			// TODO(kevlar): Delete server
-			user.Delete(closeid)
+			// TODO(kevlar): Generate SQUIT?
 			sid2conn[closeid] = nil, false
 		}
 	}
