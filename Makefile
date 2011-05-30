@@ -4,7 +4,7 @@
 MAKE += -s
 
 PKGS = log parser user server conn channel core
-CMDS = ircd rfc2go
+CMDS = rfc2go watermark ircd
 
 # By default, build everything
 all : rfc pkgs cmds
@@ -24,18 +24,22 @@ define all_commands
 $(foreach cmd,$(CMDS),$(call recurse,cmd,$(cmd),$(1)))
 endef
 
-pkgs :
+pkgs : watermark
 	$(call all_packages,install)
 
 cmds :
 	$(call all_commands,all)
 
-install clean nuke :
+install : watermark
 	$(call all_packages,$@)
 	$(call all_commands,$@)
 
-test bench : install
+test bench : watermark install
 	$(call all_packages,$@)
+
+clean nuke :
+	$(call all_packages,$@)
+	$(call all_commands,$@)
 
 # Format source files
 gofmt :
@@ -49,3 +53,10 @@ src/pkg/parser/rfc2812.go : doc/IRC-RFC2812.txt doc/IRC-CustomNumerics.txt src/c
 	@echo "generate rfc"
 	@src/cmd/rfc2go/rfc2go -out $@ -pkg parser $(filter %.txt,$^)
 	@gofmt -w $@
+
+# Watermark the binary
+watermark :
+	$(call recurse,cmd,watermark,all)
+	@echo "generate watermark"
+	@src/cmd/watermark/watermark -out src/pkg/core/watermark.go -pkg core -project "ircd-blight"
+	@gofmt -w src/pkg/core/watermark.go

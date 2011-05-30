@@ -11,6 +11,9 @@ GOFILES=\
 	general.go\
 	channel.go\
 	messaging.go\
+	watermark.go\
+
+CLEANFILES += watermark.go
 
 include $(GOROOT)/src/Make.pkg
 

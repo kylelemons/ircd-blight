@@ -175,7 +175,7 @@ func sendSignon(u *user.User, ircd *IRCd) {
 
 	// RPL_YOURHOST
 	msg = parser.NewNumeric(parser.RPL_YOURHOST).Message()
-	msg.Args[1] = "Your host is " + Config.Name + ", running IRCD-Blight" // TODO(kevlar): Version
+	msg.Args[1] = "Your host is " + Config.Name + ", running " + REPO_VERSION
 	msg.DestIDs = destIDs
 	ircd.ToClient <- msg
 

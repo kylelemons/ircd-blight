@@ -3,7 +3,6 @@ syntax: glob
 *.a
 *.[568vq]
 [568vq].out
-rfc*.go
 *.cgo1.go
 *.cgo2.c
 _cgo_defun.c
@@ -25,3 +24,5 @@ _testmain.go
 src/cmd/ircd/ircd
 ircd*.conf
 ircd*.log
+rfc*.go
+watermark.go
