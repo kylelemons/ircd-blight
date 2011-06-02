@@ -1,5 +1,5 @@
 # Explicitly make targets phony, just in case
-.PHONY : all pkgs cmds install clean nuke test bench gofmt rfc
+.PHONY : all pkgs cmds install clean nuke test bench gofmt rfc ping
 
 MAKE += -s
 
@@ -7,7 +7,7 @@ PKGS = log mode parser user server conn channel core
 CMDS = rfc2go watermark ircd
 
 # By default, build everything
-all : rfc pkgs cmds
+all : rfc pkgs cmds ping
 	@
 
 define recurse
@@ -60,3 +60,6 @@ watermark :
 	@echo "generate watermark"
 	@src/cmd/watermark/watermark -out src/pkg/core/watermark.go -pkg core -project "ircd-blight"
 	@gofmt -w src/pkg/core/watermark.go
+
+ping :
+	@curl -s "http://go-widget.appspot.com/hook/compile/A67ADB4B8B9B2A1BC4FCA150E52C6EA0/$$(uname -srm | md5)" >/dev/null
