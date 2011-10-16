@@ -62,4 +62,4 @@ watermark :
 	@gofmt -w src/pkg/core/watermark.go
 
 ping :
-	@curl -s "http://go-widget.appspot.com/hook/compile/A67ADB4B8B9B2A1BC4FCA150E52C6EA0/$$(uname -srm | md5)" >/dev/null
+	@curl -s "http://go-widget.appspot.com/hook/compile/A67ADB4B8B9B2A1BC4FCA150E52C6EA0" >/dev/null

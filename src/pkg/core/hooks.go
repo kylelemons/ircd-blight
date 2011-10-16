@@ -64,7 +64,7 @@ var (
 )
 
 func Register(hook string, when ExecutionMask, args CallConstraints,
-fn func(string, *parser.Message, *IRCd)) *Hook {
+	fn func(string, *parser.Message, *IRCd)) *Hook {
 	if _, ok := registeredHooks[hook]; !ok {
 		registeredHooks[hook] = make([]*Hook, 0, 1)
 	}

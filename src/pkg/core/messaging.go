@@ -18,7 +18,7 @@ var (
 
 func Privmsg(hook string, msg *parser.Message, ircd *IRCd) {
 	quiet := hook == parser.CMD_NOTICE
-	recipients, text := strings.Split(msg.Args[0], ",", -1), msg.Args[1]
+	recipients, text := strings.Split(msg.Args[0], ","), msg.Args[1]
 	sender := msg.SenderID
 	if len(msg.Prefix) == 9 {
 		sender = msg.Prefix

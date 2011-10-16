@@ -40,15 +40,15 @@ func ParseMessage(line []byte) *Message {
 	}
 	m := new(Message)
 	if line[0] == ':' {
-		split := bytes.Split(line, []byte{' '}, 2)
+		split := bytes.SplitN(line, []byte{' '}, 2)
 		if len(split) <= 1 {
 			return nil
 		}
 		m.Prefix = string(split[0][1:])
 		line = split[1]
 	}
-	split := bytes.Split(line, []byte{':'}, 2)
-	args := bytes.Split(bytes.TrimSpace(split[0]), []byte{' '}, -1)
+	split := bytes.SplitN(line, []byte{':'}, 2)
+	args := bytes.Split(bytes.TrimSpace(split[0]), []byte{' '})
 	m.Command = string(bytes.ToUpper(args[0]))
 	m.Args = make([]string, 0, len(args))
 	for _, arg := range args[1:] {

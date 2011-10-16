@@ -11,13 +11,13 @@ import (
 
 // a Password stores Passwords for Oper and User directives.
 type Password struct {
-	Type     string "attr"
-	Password string "chardata"
+	Type     string `xml:"attr"`
+	Password string `xml:"chardata"`
 }
 
 // An Oper is an operator configuration directive.
 type Oper struct {
-	Name     string "attr"
+	Name     string `xml:"attr"`
 	Password *Password
 	Host     []string
 	Flag     []string
@@ -25,7 +25,7 @@ type Oper struct {
 
 // A Class is a user/server connection class directive.
 type Class struct {
-	Name string "attr"
+	Name string `xml:"attr"`
 	Host []string
 	Flag []string
 }
@@ -33,15 +33,15 @@ type Class struct {
 // A Link represents the configuration information for a remote
 // server link.
 type Link struct {
-	Name string "attr"
+	Name string `xml:"attr"`
 	Host []string
 	Flag []string
 }
 
 // A Ports direcive stores a port range and whether or not it is an SSL port.
 type Ports struct {
-	SSL        string "attr"
-	PortString string "chardata"
+	SSL        string `xml:"attr"`
+	PortString string `xml:"chardata"`
 }
 
 // GetPortList gets the port list specified by the range(s) in this ports directive.
@@ -50,9 +50,9 @@ type Ports struct {
 //   6666-6669      // A port range
 //   6666-6669,6697 // Comma-separated ranges
 func (p *Ports) GetPortList() (ports []int, err os.Error) {
-	ranges := strings.Split(p.PortString, ",", -1)
+	ranges := strings.Split(p.PortString, ",")
 	for _, rng := range ranges {
-		extremes := strings.Split(strings.TrimSpace(rng), "-", -1)
+		extremes := strings.Split(strings.TrimSpace(rng), "-")
 		if len(extremes) > 2 {
 			return nil, os.NewError("Invalid port range: " + rng)
 		}

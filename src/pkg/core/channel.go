@@ -22,7 +22,7 @@ var (
 // Local joins only
 func Join(hook string, msg *parser.Message, ircd *IRCd) {
 	// todo keys
-	for _, channame := range strings.Split(msg.Args[0], ",", -1) {
+	for _, channame := range strings.Split(msg.Args[0], ",") {
 		channel, err := channel.Get(channame, true)
 		if num, ok := err.(*parser.Numeric); ok {
 			ircd.ToClient <- num.Message(msg.SenderID)
@@ -80,7 +80,7 @@ func Part(hook string, msg *parser.Message, ircd *IRCd) {
 
 	leftchans := []string{}
 
-	for _, channame := range strings.Split(msg.Args[0], ",", -1) {
+	for _, channame := range strings.Split(msg.Args[0], ",") {
 		channel, err := channel.Get(channame, false)
 		if num, ok := err.(*parser.Numeric); ok {
 			ircd.ToClient <- num.Message(msg.SenderID)
@@ -140,7 +140,7 @@ func SJoin(hook string, msg *parser.Message, ircd *IRCd) {
 		if len(msg.Args) == 3 {
 			return
 		}
-		uids = strings.Split(msg.Args[3], " ", -1)
+		uids = strings.Split(msg.Args[3], " ")
 	}
 
 	_ = chanTS
@@ -198,7 +198,7 @@ func SJoin(hook string, msg *parser.Message, ircd *IRCd) {
 
 // Server PART
 func SPart(hook string, msg *parser.Message, ircd *IRCd) {
-	chanlist, reason := strings.Split(msg.Args[0], ",", -1), msg.Args[1]
+	chanlist, reason := strings.Split(msg.Args[0], ","), msg.Args[1]
 
 	// Forward on to other servers
 	for fwd := range server.Iter() {

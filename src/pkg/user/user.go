@@ -156,7 +156,6 @@ func (u *User) SetUser(user, name string) os.Error {
 	return nil
 }
 
-
 // Set the user's type (immutable once set).
 func (u *User) SetType(newType userType) os.Error {
 	if u.utyp != Unregistered {

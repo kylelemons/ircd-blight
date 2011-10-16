@@ -10,7 +10,6 @@ import (
 	"log"
 	"os"
 	"runtime"
-	"strings"
 )
 
 var (
@@ -18,37 +17,6 @@ var (
 	out  = flag.String("out", "-", "The Go source file to store the watermark")
 	proj = flag.String("project", "", "The name of the project (prefix to REPO_VERSION)")
 )
-
-func runCommand(args ...string) string {
-	cmd := args[0]
-
-	binary, err := exec.LookPath(cmd)
-	if err != nil {
-		log.Fatalf("Could not find `%s`: %s", cmd, err)
-	}
-
-	runner, err := exec.Run(binary, args, nil, "", exec.DevNull, exec.Pipe, exec.Pipe)
-	if err != nil {
-		log.Fatalf("Could not run `%s`: %s", strings.Join(args, " "), err)
-	}
-
-	wm, err := runner.Wait(0)
-	if err != nil {
-		log.Fatalf("Error running `%s`: %s", strings.Join(args, " "), err)
-	}
-
-	status := wm.WaitStatus.ExitStatus()
-	if status != 0 {
-		log.Printf("Error in `%s` (exit code %d):", strings.Join(args, " "), err)
-		io.Copy(os.Stderr, runner.Stderr)
-		os.Exit(1)
-	}
-
-	outbuf := bytes.NewBuffer(nil)
-	io.Copy(outbuf, runner.Stdout)
-	outbytes := outbuf.Bytes()
-	return string(bytes.TrimSpace(outbytes))
-}
 
 func main() {
 	flag.Parse()
@@ -65,7 +33,11 @@ func main() {
 
 	goVersion := runtime.Version()
 
-	tag := runCommand("git", "describe")
+	raw, err := exec.Command("git", "describe", "--tags").Output()
+	if err != nil {
+		log.Fatalf("describe: %s", err)
+	}
+	tag := string(raw)
 	if project := *proj; len(project) > 0 {
 		tag = project + "-" + tag
 	}

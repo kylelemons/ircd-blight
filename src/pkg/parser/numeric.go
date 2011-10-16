@@ -18,7 +18,7 @@ func NewNumeric(num string, args ...string) *Numeric {
 	}
 
 	// Strip out the format (before the : in NumericText rfc*.go)
-	pieces := strings.Split(text, " :", 2)
+	pieces := strings.SplitN(text, " :", 2)
 	numargs := append([]string{"*"}) // reserve one for the nick
 
 	argcnt := 0

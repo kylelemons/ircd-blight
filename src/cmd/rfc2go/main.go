@@ -66,8 +66,8 @@ func main() {
 		log.Fatalf("No numerics loaded.")
 	}
 
-	sort.SortStrings(numerics)
-	sort.SortStrings(names)
+	sort.Strings(numerics)
+	sort.Strings(names)
 
 	fmt.Fprintf(fout, "package %s\n\n", *pkg)
 	fmt.Fprintf(fout, "// Automatically generated from %s\n", strings.Join(flag.Args(), " "))
