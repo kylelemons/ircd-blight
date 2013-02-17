@@ -107,7 +107,7 @@ func TestGridOps(t *testing.T) {
 			switch op := op.(type) {
 			case insertion:
 				pair := [2]string{op.first, op.second}
-				if got, want := g.Insert(pair), op.inserted; got != want {
+				if got, want := g.Insert(pair, pair), op.inserted; got != want {
 					t.Errorf("%s: insert(%q) = %v, want %v", test.desc, pair, got, want)
 				}
 			case deletion:
@@ -139,20 +139,43 @@ var (
 	}
 )
 
-func insertCount(cnt int) {
+func insertCount(cnt int) Grid {
 	prng := rand.New(rand.NewSource(int64(cnt)))
 
 	var g Grid
 	for i := 0; i < cnt; i++ {
 		c, u := prng.Intn(len(channels)), prng.Intn(len(users))
-		g.Insert([2]string{channels[c], users[u]})
+		g.Insert([2]string{channels[c], users[u]}, nil)
 	}
+	return g
 }
 
 func BenchmarkGridInsert(b *testing.B) {
 	const batch = 10000
 	for i := 0; i < b.N; {
 		insertCount(batch)
+		i += batch
+	}
+}
+
+func getCount(g Grid, cnt int) {
+	prng := rand.New(rand.NewSource(int64(cnt)))
+
+	for i := 0; i < cnt; i++ {
+		c, u := prng.Intn(len(channels)), prng.Intn(len(users))
+		g.Get([2]string{channels[c], users[u]})
+	}
+}
+
+func BenchmarkGridGet(b *testing.B) {
+	const start = 5000
+	const batch = 10000
+
+	g := insertCount(start)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; {
+		getCount(g, batch)
 		i += batch
 	}
 }
