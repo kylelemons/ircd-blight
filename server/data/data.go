@@ -53,6 +53,14 @@ type User struct {
 // A MemberMode is a bitmask indicating what modes a user has on a channel.
 type MemberMode uint64
 
+// Member mode constants
+const (
+	MemberVoice MemberMode = 1 << iota
+	MemberHalfOp
+	MemberOp
+	MemberAdmin
+)
+
 // A Member stores data about a user's membership on a channel.
 type Member struct {
 	sync.Mutex
