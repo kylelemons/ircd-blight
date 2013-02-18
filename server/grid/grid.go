@@ -34,19 +34,19 @@ type Grid struct {
 // be created (as with Touch) but with nil data.
 //
 // This function is goroutine safe.
-func (g *Grid) Insert(keys [2]string, data interface{}) bool {
+func (g *Grid) Insert(keys [2]string, data interface{}) (notify [2][]string, ok bool) {
 	// Get the List on each Edge
 	lists := [2]*List{g.Edges[0].Touch(keys[0], nil), g.Edges[1].Touch(keys[1], nil)}
 
 	// Find the insertion point along each axis
 	ptrs, exacts := [2]**Membership{}, [2]bool{}
-	for i := range keys {
-		lists[i].lock.Lock()
-		defer lists[i].lock.Unlock()
+	for i, lst := range lists {
+		lst.lock.Lock()
+		defer lst.lock.Unlock()
 
-		ptrs[i], exacts[i] = lists[i].find(i, keys[1-i])
+		ptrs[i], exacts[i] = lst.find(i, keys[1-i])
 		if exacts[i] {
-			return false
+			return notify, false
 		}
 	}
 
@@ -60,7 +60,14 @@ func (g *Grid) Insert(keys [2]string, data interface{}) bool {
 		*ptrs[i] = &mem
 	}
 
-	return true
+	for i, lst := range lists {
+		// lst is still locked
+		for m := lst.members; m != nil; m = m.next[i] {
+			notify[1-i] = append(notify[1-i], m.Edges[1-i].Name)
+		}
+	}
+
+	return notify, true
 }
 
 // Get gets the membership between the two keys if it exists and also
