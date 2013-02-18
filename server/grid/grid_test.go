@@ -1,22 +1,28 @@
 package grid
 
 import (
-	"testing"
 	"math/rand"
 	"reflect"
+	"testing"
 )
 
 func TestGridOps(t *testing.T) {
 	type insertion struct {
 		first, second string
-		inserted bool
+		inserted      bool
 	}
 	type deletion struct {
 		first, second string
+		deleted       bool
+	}
+	type quit struct {
+		user    string
+		parted  []string
+		notify  [][]string
 		deleted bool
 	}
 
-	tests := []struct{
+	tests := []struct {
 		desc   string
 		ops    []interface{}
 		result [2]map[string][]string
@@ -31,13 +37,13 @@ func TestGridOps(t *testing.T) {
 			},
 			result: [2]map[string][]string{
 				{
-					"#chat": []string{"oper", "user"},
-					"#opers": []string{"oper"},
-					"#acro": []string{"user"},
+					"#chat":  {"oper", "user"},
+					"#opers": {"oper"},
+					"#acro":  {"user"},
 				},
 				{
-					"oper": []string{"#chat", "#opers"},
-					"user": []string{"#acro", "#chat"},
+					"oper": {"#chat", "#opers"},
+					"user": {"#acro", "#chat"},
 				},
 			},
 		},
@@ -50,11 +56,11 @@ func TestGridOps(t *testing.T) {
 			},
 			result: [2]map[string][]string{
 				{
-					"#chat": []string{"oper"},
-					"#opers": []string{"oper"},
+					"#chat":  {"oper"},
+					"#opers": {"oper"},
 				},
 				{
-					"oper": []string{"#chat", "#opers"},
+					"oper": {"#chat", "#opers"},
 				},
 			},
 		},
@@ -67,10 +73,10 @@ func TestGridOps(t *testing.T) {
 			},
 			result: [2]map[string][]string{
 				{
-					"#chat": []string{"user"},
+					"#chat": {"user"},
 				},
 				{
-					"user": []string{"#chat"},
+					"user": {"#chat"},
 				},
 			},
 		},
@@ -89,13 +95,39 @@ func TestGridOps(t *testing.T) {
 			},
 			result: [2]map[string][]string{
 				{
-					"#chat": []string{"oper", "user"},
-					"#opers": []string{"oper"},
-					"#acro": []string{"user"},
+					"#chat":  {"oper", "user"},
+					"#opers": {"oper"},
+					"#acro":  {"user"},
 				},
 				{
-					"oper": []string{"#chat", "#opers"},
-					"user": []string{"#acro", "#chat"},
+					"oper": {"#chat", "#opers"},
+					"user": {"#acro", "#chat"},
+				},
+			},
+		},
+		{
+			desc: "row col delete",
+			ops: []interface{}{
+				insertion{"#chat", "oper", true},
+				insertion{"#opers", "oper", true},
+				insertion{"#opers", "user", true},
+				insertion{"#chat", "user", true},
+				insertion{"#acro", "user", true},
+				quit{
+					"user",
+					[]string{"#acro", "#chat", "#opers"},
+					[][]string{{"user"}, {"oper", "user"}, {"oper", "user"}},
+					true,
+				},
+				quit{"other", nil, nil, false},
+			},
+			result: [2]map[string][]string{
+				{
+					"#chat":  {"oper"},
+					"#opers": {"oper"},
+				},
+				{
+					"oper": {"#chat", "#opers"},
 				},
 			},
 		},
@@ -115,6 +147,20 @@ func TestGridOps(t *testing.T) {
 				if got, want := g.Delete(pair), op.deleted; got != want {
 					t.Errorf("%s: delete(%q) = %v, want %v", test.desc, pair, got, want)
 				}
+			case quit:
+				// users are the second edge
+				deleted, notify, ok := g.DeleteAll(1, op.user)
+				if got, want := ok, op.deleted; got != want {
+					t.Errorf("%s: deleteall(%q).deleted = %v, want %v", test.desc, op.user, got, want)
+				}
+				if got, want := notify, op.notify; !reflect.DeepEqual(got, want) {
+					t.Errorf("%s: deleteall(%q).notify = %v, want %v", test.desc, op.user, got, want)
+				}
+				if got, want := deleted, op.parted; !reflect.DeepEqual(got, want) {
+					t.Errorf("%s: deleteall(%q).list = %v, want %v", test.desc, op.user, got, want)
+				}
+			default:
+				t.Errorf("%s: unknown %#v", test.desc, op)
 			}
 		}
 		if got, want := g.dump(), test.result; !reflect.DeepEqual(got, want) {

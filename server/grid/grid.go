@@ -99,6 +99,8 @@ func (g *Grid) Get(keys [2]string) (*Membership, bool) {
 
 // Delete removes an association between the given keys and returns whether or
 // not a deletion was performed.
+//
+// This function is goroutine-safe.
 func (g *Grid) Delete(keys [2]string) bool {
 	// Find the two edges
 	lists, ok := [2]*List{}, false
@@ -122,10 +124,65 @@ func (g *Grid) Delete(keys [2]string) bool {
 
 	// Skip the membership and let the GC deal with the link.
 	for i, mem := range mems {
-		*mem = (*mem).next[i]
+		*mem, (*mem).next[i] = (*mem).next[i], nil
 	}
 
 	return true
+}
+
+// DeleteAll removes the given key along the given edge and all memberships
+// it has and returns:
+//   - the key of any list from which a membership was deleted
+//   - the keys of other members in the above lists
+//   - a boolean indicating whether the key was found
+//
+// This function is goroutine-safe, but very expensive.
+func (g *Grid) DeleteAll(edge int, key string) ([]string, [][]string, bool) {
+	// Always acquire the locks in order (to prevent deadlock)
+	for _, e := range g.Edges {
+		e := e
+		e.lock.Lock()
+		defer e.lock.Unlock()
+	}
+
+	// Get the primary and secondary axes
+	pri, pidx := g.Edges[edge], edge
+	sec, sidx := g.Edges[1-edge], 1-edge
+	_ = sec
+
+	// Find the list we're deleting and delete it or return
+	lst, ok := pri.lists[key]
+	delete(pri.lists, key)
+	if !ok {
+		return nil, nil, false
+	}
+
+	var keys []string
+	var affected [][]string
+
+	// Perform the deletions
+	lst.lock.Lock()
+	defer lst.lock.Unlock()
+	for m := lst.members; m != nil; m = m.next[pidx] {
+		other := m.Edges[sidx]
+
+		var notify []string
+		for n := other.members; n != nil; n = n.next[sidx] {
+			notify = append(notify, n.Edges[pidx].Name)
+		}
+
+		keys = append(keys, other.Name)
+		affected = append(affected, notify)
+
+		mem, ok := other.find(sidx, key)
+		if !ok {
+			log.Printf("failed to find %q along %q axis", key, other.Name)
+			continue
+		}
+		*mem, (*mem).next[sidx] = (*mem).next[sidx], nil
+	}
+
+	return keys, affected, true
 }
 
 // dump returns a snapshot of the grid.
@@ -192,8 +249,11 @@ func (e *Edge) Touch(name string, data interface{}) *List {
 // A List acts as the head node of one axis of membership and contains its
 // name.  Mutations of the linked list should be interlocked.
 type List struct {
-	Name    string
-	lock    sync.RWMutex
+	Name string
+	lock sync.RWMutex
+
+	// If this List is on Grid.Edges[idx], follow the list by iterating over
+	// member.next[idx].
 	members *Membership
 
 	Data interface{}
