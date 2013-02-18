@@ -101,12 +101,12 @@ func (g *Grid) Get(keys [2]string) (*Membership, bool) {
 // not a deletion was performed.
 //
 // This function is goroutine-safe.
-func (g *Grid) Delete(keys [2]string) bool {
+func (g *Grid) Delete(keys [2]string) (notify [2][]string, ok bool) {
 	// Find the two edges
 	lists, ok := [2]*List{}, false
 	for i, key := range keys {
 		if lists[i], ok = g.Edges[i].Get(key); !ok {
-			return false
+			return notify, false
 		}
 	}
 
@@ -116,9 +116,13 @@ func (g *Grid) Delete(keys [2]string) bool {
 		lst.lock.Lock()
 		defer lst.lock.Unlock()
 
+		for m := lst.members; m != nil; m = m.next[i] {
+			notify[1-i] = append(notify[1-i], m.Edges[1-i].Name)
+		}
+
 		mems[i], ok = lst.find(i, keys[1-i])
 		if !ok {
-			return false
+			return notify, false
 		}
 	}
 
@@ -127,7 +131,7 @@ func (g *Grid) Delete(keys [2]string) bool {
 		*mem, (*mem).next[i] = (*mem).next[i], nil
 	}
 
-	return true
+	return notify, true
 }
 
 // DeleteAll removes the given key along the given edge and all memberships
@@ -137,7 +141,7 @@ func (g *Grid) Delete(keys [2]string) bool {
 //   - a boolean indicating whether the key was found
 //
 // This function is goroutine-safe, but very expensive.
-func (g *Grid) DeleteAll(edge int, key string) ([]string, [][]string, bool) {
+func (g *Grid) DeleteAll(edge int, key string) (affected []string, notify [][]string, ok bool) {
 	// Always acquire the locks in order (to prevent deadlock)
 	for _, e := range g.Edges {
 		e := e
@@ -157,22 +161,19 @@ func (g *Grid) DeleteAll(edge int, key string) ([]string, [][]string, bool) {
 		return nil, nil, false
 	}
 
-	var keys []string
-	var affected [][]string
-
 	// Perform the deletions
 	lst.lock.Lock()
 	defer lst.lock.Unlock()
 	for m := lst.members; m != nil; m = m.next[pidx] {
 		other := m.Edges[sidx]
 
-		var notify []string
+		var not []string
 		for n := other.members; n != nil; n = n.next[sidx] {
-			notify = append(notify, n.Edges[pidx].Name)
+			not = append(not, n.Edges[pidx].Name)
 		}
 
-		keys = append(keys, other.Name)
-		affected = append(affected, notify)
+		affected = append(affected, other.Name)
+		notify = append(notify, not)
 
 		mem, ok := other.find(sidx, key)
 		if !ok {
@@ -182,7 +183,7 @@ func (g *Grid) DeleteAll(edge int, key string) ([]string, [][]string, bool) {
 		*mem, (*mem).next[sidx] = (*mem).next[sidx], nil
 	}
 
-	return keys, affected, true
+	return affected, notify, true
 }
 
 // dump returns a snapshot of the grid.

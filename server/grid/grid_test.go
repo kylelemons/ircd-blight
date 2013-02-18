@@ -13,6 +13,7 @@ func TestGridOps(t *testing.T) {
 	}
 	type deletion struct {
 		first, second string
+		notify        [2][]string
 		deleted       bool
 	}
 	type quit struct {
@@ -68,7 +69,7 @@ func TestGridOps(t *testing.T) {
 			desc: "basic delete",
 			ops: []interface{}{
 				insertion{"#chat", "user", true},
-				deletion{"#chat", "user", true},
+				deletion{"#chat", "user", [2][]string{{"#chat"}, {"user"}}, true},
 				insertion{"#chat", "user", true},
 			},
 			result: [2]map[string][]string{
@@ -84,14 +85,14 @@ func TestGridOps(t *testing.T) {
 			desc: "deletes",
 			ops: []interface{}{
 				insertion{"#chat", "oper", true},
-				deletion{"#chat", "fake", false},
+				deletion{"#chat", "fake", [2][]string{}, false},
 				insertion{"#opers", "user", true},
-				deletion{"#fake", "user", false},
+				deletion{"#fake", "user", [2][]string{}, false},
 				insertion{"#opers", "oper", true},
-				deletion{"#opers", "user", true},
+				deletion{"#opers", "user", [2][]string{{"#opers"}, {"oper", "user"}}, true},
 				insertion{"#chat", "user", true},
 				insertion{"#acro", "user", true},
-				deletion{"#fake", "fake", false},
+				deletion{"#fake", "fake", [2][]string{}, false},
 			},
 			result: [2]map[string][]string{
 				{
@@ -144,8 +145,12 @@ func TestGridOps(t *testing.T) {
 				}
 			case deletion:
 				pair := [2]string{op.first, op.second}
-				if got, want := g.Delete(pair), op.deleted; got != want {
-					t.Errorf("%s: delete(%q) = %v, want %v", test.desc, pair, got, want)
+				notify, ok := g.Delete(pair)
+				if got, want := notify, op.notify; !reflect.DeepEqual(got, want) {
+					t.Errorf("%s: delete(%q).notify = %v, want %v", test.desc, pair, got, want)
+				}
+				if got, want := ok, op.deleted; got != want {
+					t.Errorf("%s: delete(%q).ok = %v, want %v", test.desc, pair, got, want)
 				}
 			case quit:
 				// users are the second edge
@@ -222,6 +227,29 @@ func BenchmarkGridGet(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; {
 		getCount(g, batch)
+		i += batch
+	}
+}
+
+func insDelCount(g Grid, cnt int) {
+	prng := rand.New(rand.NewSource(int64(cnt)))
+
+	for i := 0; i < cnt; i++ {
+		c, u := prng.Intn(len(channels)), prng.Intn(len(users))
+		g.Insert([2]string{channels[c], users[u]}, nil)
+		g.Delete([2]string{channels[c], users[u]})
+	}
+}
+
+func BenchmarkGridInsDel(b *testing.B) {
+	const start = 5000
+	const batch = 10000
+
+	g := insertCount(start)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; {
+		insDelCount(g, batch)
 		i += batch
 	}
 }
