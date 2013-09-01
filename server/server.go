@@ -99,10 +99,31 @@ func (s *Server) join(uid, channel string) (*data.Member, error) {
 		member.Mode |= data.MemberOp | data.MemberAdmin
 	}
 
-	if added := s.grid.Insert([2]string{u.UID, c.Name}, member); !added {
+	if _, added := s.grid.Insert([2]string{u.UID, c.Name}, member); !added {
 		return nil, fmt.Errorf("UID %q is already on %s", u.UID, c.Name)
 	}
 	return member, nil
+}
+
+func (s *Server) part(uid, channel, message string) error {
+	s.rw.Lock()
+	defer s.rw.Unlock()
+
+	u, ok := s.users[uid]
+	if !ok {
+		return fmt.Errorf("UID %q does not exist", uid)
+	}
+
+	c, ok := s.chans[uid]
+	if !ok {
+		return fmt.Errorf("Channel %q does not exist", uid)
+	}
+
+	if _, deleted := s.grid.Delete([2]string{u.UID, c.Name}); !deleted {
+		return fmt.Errorf("UID %q is not on %s", u.UID, c.Name)
+	}
+
+	return nil
 }
 
 func idstr(id uint64, length int) string {

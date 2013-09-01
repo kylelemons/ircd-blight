@@ -65,8 +65,6 @@ func TestJoin(t *testing.T) {
 	var (
 		zaphod = user("zaphod")
 		ford   = user("ford")
-		arthur = user("arthur")
-		marvin = user("marvin")
 	)
 
 	tests := []struct {
@@ -84,12 +82,9 @@ func TestJoin(t *testing.T) {
 			Channel: "#HoG",
 		},
 		{
-			UID:     arthur,
+			UID:     ford,
 			Channel: "#HoG",
-		},
-		{
-			UID:     marvin,
-			Channel: "#HoG",
+			Error:   errors.New(`UID "7STAAAAAB" is already on #HoG`),
 		},
 	}
 
