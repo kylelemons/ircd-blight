@@ -212,7 +212,7 @@ func TestLinking(t *testing.T) {
 		case tLink:
 			s := Get(test.UpSID, true)
 			if s == nil {
-				t.Errorf("%d. Get(%s) returned nil (should be linked)", idx, test.UpSID)
+				t.Errorf("%d. Lookup(%s) returned nil (should be linked)", idx, test.UpSID)
 			}
 			err := Link(test.UpSID, test.SID, test.SID+"serv", test.Hops, test.SID+"desc")
 			if err != nil {
